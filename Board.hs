@@ -1,6 +1,6 @@
 module Board where
 
-data Piece = BPawn
+data Tile = BPawn
            | BRook
            | BKnight
            | BBishop
@@ -14,7 +14,7 @@ data Piece = BPawn
            | WKing
            | Empty
     
-instance Show Piece where
+instance Show Tile where
     show BPawn   = "p"
     show BRook   = "r"
     show BKnight = "n"
@@ -29,15 +29,18 @@ instance Show Piece where
     show WKing   = "K"
     show Empty   = " "
 
-type Board = [[Piece]]
+type Board = [[Tile]]
 -- TODO: verify number of rows and columns
 
-printRow :: [Piece] -> IO ()
+printRow :: [Tile] -> IO ()
 printRow []     = return () 
 printRow [x]    = putStrLn $ show x 
 printRow (x:xs) = do putStr $ show x 
                      putStr " | "
                      printRow xs
+
+printLine :: IO ()
+printLine = putStrLn "------------------------------"
 
 printBoard :: Board -> IO ()
 printBoard []     = return ()
@@ -45,10 +48,6 @@ printBoard [x]    = printRow x
 printBoard (x:xs) = do printRow x
                        printLine 
                        printBoard xs
-
-
-printLine :: IO ()
-printLine = putStrLn "------------------------------"
 
 
 
