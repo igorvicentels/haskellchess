@@ -49,6 +49,26 @@ printBoard (x:xs) = do printRow x
                        printLine 
                        printBoard xs
 
+getPiece :: Int -> Int -> Board -> Tile
+getPiece x y b
+    | x < 0 || y < 0 || x > 7 || y > 7 = error "invalid index"
+    | otherwise                        = b !! y !! x
+
+setTile :: (Int, Int) -> Tile -> Board -> Board
+setTile (x, 0) t (r:rs) = setTile' x t r : rs
+setTile (x, y) t (r:rs) = r : setTile (x, (y - 1)) t rs 
+
+setTile' :: Int -> Tile -> [Tile] -> [Tile]
+setTile' 0 t (y:ys) = t : ys
+setTile' x t (y:ys) = y : setTile' (x-1) t ys
+
+movePiece :: (Int, Int) -> (Int, Int) -> Board -> Board
+movePiece (x1, y1) (x2, y2) b = 
+    case (getPiece x1 y1 b) of
+        Empty   -> error ""
+        x       -> setTile (x1, y1) Empty (setTile (x2, y2) x b)
+
+
 
 
 testRow1 = [BRook, BKnight, BBishop, BQueen, BKing, BBishop, BKnight, BRook]
