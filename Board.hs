@@ -97,18 +97,16 @@ canMovePawn (x1, y1) (x2, y2) c b =
                     x2 - x1 == 1 || (x1 == 1 && x2 == 3) 
                 x     -> 
                     case getColor x of
-                        Black -> False
-                        White -> 
-                            x2 - x1 == 1 && abs (y1 - y2) == 1
+                        Just Black -> False
+                        Just White -> x2 - x1 == 1 && abs (y1 - y2) == 1
         White -> 
             case getTile (x2, y2) b of
                 Empty -> 
                     x1 - x2 == 1 || (x1 == 6 &&  x2 == 4) 
                 x     -> 
                     case getColor x of
-                        White -> False
-                        Black -> 
-                            x1 - x2 == 1 && abs (y1 - y2) == 1
+                        Just White -> False
+                        Just Black -> x1 - x2 == 1 && abs (y1 - y2) == 1
 
 canMoveRook :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
 canMoveRook (x1,y1) (x2,y2) c b = canMoveRook' (x1,y1) (x2,y2) b 
@@ -184,15 +182,15 @@ canMoveKing (x1, y1) (x2, y2) c b =
     ((abs (x1 - x2) == 1 && (y1 == y2 || abs (y1 - y2) == 1)) || (abs (y1 - y2) == 1 && (x1 == x2 || abs (x1 - x2) == 1)))  
     where t2 = getTile (x2,y2) b
 
-getColor :: Tile -> Color
-getColor Empty = error ""
-getColor (Pawn White)   = White
-getColor (Rook White)   = White
-getColor (Bishop White) = White
-getColor (Knight White) = White
-getColor (Queen White)  = White
-getColor (King White)   = White
-getColor _              = Black
+getColor :: Tile -> Maybe Color
+getColor Empty          = Nothing
+getColor (Pawn White)   = Just White
+getColor (Rook White)   = Just White
+getColor (Bishop White) = Just White
+getColor (Knight White) = Just White
+getColor (Queen White)  = Just White
+getColor (King White)   = Just White
+getColor _              = Just Black
 
 
 testRow1 = [Rook Black, Knight Black, Bishop Black, Queen Black, King Black, Bishop Black, Knight Black, Rook Black]
