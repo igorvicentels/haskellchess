@@ -71,7 +71,7 @@ movePiece (x1, y1) (x2, y2) b =
         else 
             b
 
--- TODO: Check if to tile is empty or opposite team here
+-- TODO: Check if tile 2 is inside the board
 canMove :: (Int, Int) -> (Int, Int) -> Board -> Bool
 canMove (x1, y1) (x2, y2) b
     | (x1 == x2) && (y1 == y2)                 = False
@@ -114,7 +114,7 @@ canMoveRook (x1,y1) (x2,y2) c b = canMoveRook' (x1,y1) (x2,y2) b
 
 canMoveRook' :: (Int, Int) -> (Int, Int) -> Board -> Bool
 canMoveRook' (x1,y1) (x2,y2) b
-    |(x1 == x2) && (y1 == y2) = True  
+    |(x1 == x2) && (y1 == y2) = True --talvez tirar essa linha 
     |(x1 == x2) = 
         if (y1 < y2)
             then
@@ -143,8 +143,8 @@ canMoveBishop (x1,y1) (x2,y2) c b = canMoveBishop' (x1,y1) (x2,y2) b
 
 canMoveBishop' :: (Int, Int) -> (Int, Int) -> Board -> Bool
 canMoveBishop' (x1,y1) (x2,y2) b
-    |(x1 == x2) && (y1 == y2) = True 
-    |abs(x1 - x2) /= abs(y1 - y2) || (x1 == x2) || (y1 == y2) = False
+    |(x1 == x2) && (y1 == y2) = True --talvez tirar isso
+    |abs(x1 - x2) /= abs(y1 - y2) = False
     |otherwise = 
         if (y1 < y2) 
             then
@@ -211,21 +211,47 @@ testBoard = [ testRow1
             , testRow7
             , testRow8 ] 
 
-b1  = movePiece (1, 0) (3, 0) testBoard
-b2  = movePiece (6, 1) (4, 1) b1
-b3  = movePiece (3, 0) (4, 1) b2
-b4  = movePiece (0, 2) (0, 3) b3
-b5  = movePiece (0, 1) (2, 2) b4
-b6  = movePiece (7, 4) (6, 4) b5
-b7  = movePiece (6, 4) (5, 4) b6
-b8  = movePiece (7, 4) (6, 4) b7
-b9  = movePiece (7, 4) (6, 4) b8
-b10 = movePiece (7, 4) (6, 4) b9
-b11 = movePiece (7, 4) (6, 4) b10
-b12 = movePiece (7, 4) (6, 4) b11
-b13 = movePiece (7, 4) (6, 4) b12
-b14 = movePiece (7, 4) (6, 4) b13
-b15 = movePiece (7, 4) (6, 4) b14
-b16 = movePiece (7, 4) (6, 4) b15
-b17 = movePiece (7, 4) (6, 4) b16
- 
+b1  = movePiece (6, 1) (4, 1) testBoard -- Wpawn avança duas casas 
+b2  = movePiece (7, 2) (5, 0) b1 -- Wbishop avança diag sup esq
+b3  = movePiece (5, 0) (4, 1) b2 -- movimento invalido do Wbishop por peça do mesmo time
+b4  = movePiece (4, 1) (3, 1) b3 -- wpawn avança uma casa
+b5  = movePiece (5, 0) (1, 4) b4 -- wbishop captura (para diag sup dir) bpawn
+b6  = movePiece (1, 4) (4, 7) b5 -- Wbishop move diag inf dir
+b7  = movePiece (4, 7) (5, 6) b6 -- Wbishop move diag inf esq
+b8  = movePiece (0, 5) (4, 1) b7 -- Bbishop move diag inf esq
+b9  = movePiece (4, 1) (7, 4) b8 -- mov inválido do Bbishop por sentido de movimento ocupado
+b10 = movePiece (4, 1) (6, 3) b9 -- Bbishop captura (para diag inf dir) Wpawn
+b11 = movePiece (6, 3) (4, 3) b10 -- mov inválido do Bbishop (vertical)
+b12 = movePiece (5, 6) (5, 0) b11 -- mov inválido do Wbishop (horizontal)
+
+r1  = movePiece (6, 0) (4, 0) testBoard  
+r2  = movePiece (7, 0) (5, 0) r1 --movimento Wrook vertical cima
+r3  = movePiece (5, 0) (5, 7) r2 --movimento Wrook horizontal
+r4  = movePiece (5, 7) (1, 7) r3 --Wrook captura (para cima) Bpawn
+r5  = movePiece (1, 7) (1, 6) r4 --Wrook captura (para esq) Bpawn
+r6  = movePiece (1, 6) (0, 5) r5 --mov invalido Wrook diagonal
+r7  = movePiece (1, 6) (4, 6) r6 --movimento Wrook vertical baixo
+r8  = movePiece (4, 6) (4, 1) r7 --movimento Wrook horizontal esq
+r9  = movePiece (4, 1) (0, 1) r8 --mov invalido Wrook por sentido de mov ocupado
+
+n1  = movePiece (7, 1) (5, 0) testBoard -- mov Wknight sup esq
+n2  = movePiece (5, 0) (3, 1) n1 --mov Wknight sup dir
+n3  = movePiece (3, 1) (1, 2) n2 --Wknight captura (para direção sup dir) Bpawn
+n4  = movePiece (1, 2) (2, 3) n3 -- movimento invalido Wknight
+n5  = movePiece (1, 2) (3, 3) n4 -- movimento Wknight inf dir
+n6  = movePiece (3, 3) (5, 2) n5 -- movimento Wknight inf esq
+n7  = movePiece (5, 2) (6, 4) n6 -- movimento invalido Wknight por tile ocupado pela mesma cor 
+n8  = movePiece (5, 2) (4, 4) n7 -- movimento Wknight dir sup 
+
+k1  = movePiece (6, 4) (4, 4) testBoard -- mov Wpawn cima
+k2  = movePiece (7, 4) (5, 4) k1 --mov invalido (pular uma casa) Wking sup 
+k3  = movePiece (7 ,4) (6, 4) k2 --mov Wking cima
+k4  = movePiece (6 ,4) (5, 4) k3 -- mov Wking cima
+k5  = movePiece (5 ,4) (5, 5) k4 -- mov Wking direita 
+k6  = movePiece (5 ,4) (5, 3) k4 -- mov Wking esquerda 
+k7  = movePiece (5 ,4) (4, 5) k4 -- mov Wking direita cima
+k8  = movePiece (5 ,4) (4, 3) k4 -- mov Wking esquerda cima
+k9  = movePiece (5 ,4) (6, 5) k4 -- mov Wking para tile ocupada por mesmo time
+k10  = movePiece (6, 3) (4, 3) k4 -- mov Wpawn cima
+k11  = movePiece (5 ,4) (6, 3) k10 -- mov Wking baixo esq
+k12  = movePiece (6, 3) (7, 4) k11 -- mov Wking baixo dir
