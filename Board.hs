@@ -110,7 +110,6 @@ canMovePawn (x1, y1) (x2, y2) c b =
 
 canMoveRook :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMoveRook (x1,y1) (x2,y2) c b = canMoveRook' (x1,y1) (x2,y2) b 
-    where t2 = getTile (x2,y2) b
 
 canMoveRook' :: (Int, Int) -> (Int, Int) -> Board -> Bool
 canMoveRook' (x1,y1) (x2,y2) b
@@ -139,7 +138,6 @@ canMoveRook' (x1,y1) (x2,y2) b
 
 canMoveBishop :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMoveBishop (x1,y1) (x2,y2) c b = canMoveBishop' (x1,y1) (x2,y2) b 
-    where t2 = getTile (x2,y2) b
 
 canMoveBishop' :: (Int, Int) -> (Int, Int) -> Board -> Bool
 canMoveBishop' (x1,y1) (x2,y2) b
@@ -175,12 +173,10 @@ canMoveQueen (x1, y1) (x2, y2) c b = canMoveBishop (x1, y1) (x2, y2) c b || canM
 canMoveKnight :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMoveKnight (x1, y1) (x2, y2) c b =
     ((abs (x1 - x2) == 1 && abs (y1 - y2) == 2) || (abs (x1 - x2) == 2 && abs (y1 - y2) == 1))
-    where t2 = getTile (x2,y2) b
 
 canMoveKing :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMoveKing (x1, y1) (x2, y2) c b = 
     ((abs (x1 - x2) == 1 && (y1 == y2 || abs (y1 - y2) == 1)) || (abs (y1 - y2) == 1 && (x1 == x2 || abs (x1 - x2) == 1)))  
-    where t2 = getTile (x2,y2) b
 
 getTeam :: Tile -> Maybe Team
 getTeam Empty          = Nothing
