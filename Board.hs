@@ -1,35 +1,33 @@
 module Board where
 
 --  todo: change Tile type
+data Color = Black
+           | White
 
-data Tile = BPawn
-          | BRook
-          | BKnight
-          | BBishop
-          | BQueen
-          | BKing
-          | WPawn
-          | WRook
-          | WKnight
-          | WBishop
-          | WQueen
-          | WKing
+
+
+data Tile = Pawn Color
+          | Rook Color
+          | Knight Color
+          | Bishop Color
+          | Queen Color
+          | King Color
           | Empty
     
 instance Show Tile where
-    show BPawn   = "p"
-    show BRook   = "r"
-    show BKnight = "n"
-    show BBishop = "b"
-    show BQueen  = "q"
-    show BKing   = "k"
-    show WPawn   = "P"
-    show WRook   = "R"
-    show WKnight = "N"
-    show WBishop = "B"
-    show WQueen  = "Q"
-    show WKing   = "K"
-    show Empty   = " "
+    show (Pawn   Black) = "p"
+    show (Rook   Black) = "r"
+    show (Knight Black) = "n"
+    show (Bishop Black) = "b"
+    show (Queen  Black) = "q"
+    show (King   Black) = "k"
+    show (Pawn   White) = "P"
+    show (Rook   White) = "R"
+    show (Knight White) = "N"
+    show (Bishop White) = "B"
+    show (Queen  White) = "Q"
+    show (King   White) = "K"
+    show Empty        = " "
 
 type Board = [[Tile]]
 -- TODO: verify number of rows and columns
@@ -54,11 +52,11 @@ showBoard (x:xs) = do showRow x
 getTile :: (Int, Int) -> Board -> Tile
 getTile (x, y) b
     | x < 0 || y < 0 || x > 7 || y > 7 = error "invalid index"
-    | otherwise                        = b !! y !! x
+    | otherwise                        = b !! x !! y
 
 setTile :: (Int, Int) -> Tile -> Board -> Board
-setTile (x, 0) t (r:rs) = setTile' x t r : rs
-setTile (x, y) t (r:rs) = r : setTile (x, (y - 1)) t rs 
+setTile (0, y) t (r:rs) = setTile' y t r : rs
+setTile (x, y) t (r:rs) = r : setTile ((x - 1), y) t rs 
 
 setTile' :: Int -> Tile -> [Tile] -> [Tile]
 setTile' 0 t (y:ys) = t : ys
@@ -74,22 +72,22 @@ movePiece (x1, y1) (x2, y2) b =
             b
 
 canMove :: (Int, Int) -> (Int, Int) -> Board -> Bool
-canMove (x1, y1) (x2, y2) b = 
-    case (getTile (x1, y1) b) of
-        Empty -> False
+canMove (x1, y1) (x2, y2) b = True
+    -- case (getTile (x1, y1) b) of
+        -- Empty -> False
 
 
 
 
 
-testRow1 = [BRook, BKnight, BBishop, BQueen, BKing, BBishop, BKnight, BRook]
-testRow2 = [BPawn, BPawn, BPawn, BPawn, BPawn, BPawn, BPawn, BPawn]
+testRow1 = [Rook Black, Knight Black, Bishop Black, Queen Black, King Black, Bishop Black, Knight Black, Rook Black]
+testRow2 = [Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black]
 testRow3 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
 testRow4 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
 testRow5 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
 testRow6 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
-testRow7 = [WPawn, WPawn, WPawn, WPawn, WPawn, WPawn, WPawn, WPawn]
-testRow8 = [WRook, WKnight, WBishop, WQueen, WKing, WBishop, WKnight, WRook]
+testRow7 = [Pawn White, Pawn White, Pawn White, Pawn White, Pawn White, Pawn White, Pawn White, Pawn White]
+testRow8 = [Rook White, Knight White, Bishop White, Queen White, King White, Bishop White, Knight White, Rook White]
 
 testBoard = [ testRow1
             , testRow2
