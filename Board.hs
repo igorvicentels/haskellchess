@@ -3,6 +3,7 @@ module Board where
 --  todo: change Tile type
 data Color = Black
            | White
+           deriving(Eq)
 
 data Tile = Pawn Color
           | Rook Color
@@ -11,6 +12,7 @@ data Tile = Pawn Color
           | Queen Color
           | King Color
           | Empty
+          deriving(Eq)
     
 instance Show Tile where
     show (Pawn   Black) = "p"
@@ -25,7 +27,7 @@ instance Show Tile where
     show (Bishop White) = "B"
     show (Queen  White) = "Q"
     show (King   White) = "K"
-    show Empty        = " "
+    show Empty          = " "
 
 type Board = [[Tile]]
 -- TODO: verify number of rows and columns
@@ -70,15 +72,17 @@ movePiece (x1, y1) (x2, y2) b =
             b
 
 canMove :: (Int, Int) -> (Int, Int) -> Board -> Bool
-canMove (x1, y1) (x2, y2) b =
-    case (getTile (x1, y1) b) of
-        Empty  -> False
-        Pawn c -> canMovePawn (x1, y1) (x2, y2) c b
-        -- Rook c -> CanMoveRook (x1, y1) (x2, y2) c b
-        -- Knight -> CanMoveKnight (x1, y1) (x2, y2) b
-        -- Bishop -> CanMoveBishop (x1, y1) (x2, y2) b
-        -- Queen  -> CanMoveQueen (x1, y1) (x2, y2) b
-        -- King   -> CanMoveKing (x1, y1) (x2, y2) b
+canMove (x1, y1) (x2, y2) b
+    |(x1 == x2) && (y1 == y2) = False
+    |otherwise = 
+        case (getTile (x1, y1) b) of
+            Empty  -> False
+            Pawn   c -> canMovePawn (x1, y1) (x2, y2) c b
+            Rook   c -> canMoveRook (x1, y1) (x2, y2) c b
+            -- Knight -> canMoveKnight (x1, y1) (x2, y2) b
+            Bishop c -> canMoveBishop (x1, y1) (x2, y2) c b
+            Queen  c -> canMoveQueen (x1, y1) (x2, y2) c b
+            -- King   -> canMoveKing (x1, y1) (x2, y2) b
 
 canMovePawn :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
 canMovePawn (x1, y1) (x2, y2) c b =
@@ -102,16 +106,69 @@ canMovePawn (x1, y1) (x2, y2) c b =
                         Black -> 
                             x1 - x2 == 1 && abs (y1 - y2) == 1
 
--- canMoveRook :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
--- canMoveRook (x1,y1) (x2,y2) c b = (t2 == Empty || getColor t2 /= c) && canMoveRook' (x1,y1) (x2,y2) b 
---     where t2 = getTile (x2,y2) b
+canMoveRook :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMoveRook (x1,y1) (x2,y2) c b = (t2 == Empty || getColor t2 /= c) && canMoveRook' (x1,y1) (x2,y2) b 
+    where t2 = getTile (x2,y2) b
 
--- canMoveRook' :: (Int, Int) -> (Int, Int) -> Board -> Bool
--- canMoveRook' (x1,y1) (x2,y2) b =
---     | x1 == x2 = case getTile (x2,y2) b of 
---                     Empty -> canMoveRook' 
+canMoveRook' :: (Int, Int) -> (Int, Int) -> Board -> Bool
+canMoveRook' (x1,y1) (x2,y2) b
+    |(x1 == x2) && (y1 == y2) = True  
+    |(x1 == x2) = 
+        if (y1 < y2)
+            then
+                case getTile (x1, y1 + 1) b of 
+                    Empty -> canMoveRook' (x1, y1 + 1) (x2, y2) b
+                    x     -> (y1 + 1) == y2 
+            else
+                case getTile (x1, y1 - 1) b of 
+                    Empty -> canMoveRook' (x1, y1 - 1) (x2, y2) b
+                    x     -> (y1 - 1) == y2
+    |(y1 == y2) = 
+        if (x1 < x2)
+            then
+                case getTile (x1 + 1, y1) b of 
+                    Empty -> canMoveRook' (x1 + 1, y1) (x2, y2) b
+                    x     -> (x1 + 1) == x2
+            else
+                case getTile (x1 - 1, y2) b of 
+                    Empty -> canMoveRook' (x1 - 1,y1) (x2, y2) b
+                    x     -> (x1 - 1) == x2  
+    |otherwise = False
+
+canMoveBishop :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMoveBishop (x1,y1) (x2,y2) c b = (t2 == Empty || getColor t2 /= c) && canMoveBishop' (x1,y1) (x2,y2) b 
+    where t2 = getTile (x2,y2) b
+
+canMoveBishop' :: (Int, Int) -> (Int, Int) -> Board -> Bool
+canMoveBishop' (x1,y1) (x2,y2) b
+    |(x1 == x2) && (y1 == y2) = True 
+    |abs(x1 - x2) /= abs(y1 - y2) || (x1 == x2) || (y1 == y2) = False
+    |otherwise = 
+        if (y1 < y2) 
+            then
+                if (x1 < x2)
+                    then
+                        case getTile (x1 + 1, y1 + 1) b of 
+                            Empty -> canMoveBishop' (x1 + 1, y1 + 1) (x2, y2) b
+                            x     -> (x1 + 1, y1 + 1) == (x2, y2) 
+                    else
+                        case getTile (x1 - 1, y1 + 1) b of 
+                            Empty -> canMoveBishop' (x1 - 1, y1 + 1) (x2, y2) b
+                            x     -> (x1 - 1, y1 + 1) == (x2, y2)
+            else
+                if (x1 < x2)
+                    then
+                        case getTile (x1 + 1, y1 - 1) b of 
+                            Empty -> canMoveBishop' (x1 + 1, y1 - 1) (x2, y2) b
+                            x     -> (x1 + 1, y1 - 1) == (x2, y2) 
+                    else
+                        case getTile (x1 - 1, y1 - 1) b of 
+                            Empty -> canMoveBishop' (x1 - 1, y1 - 1) (x2, y2) b
+                            x     -> (x1 - 1, y1 - 1) == (x2, y2)
 
 
+canMoveQueen :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMoveQueen (x1, y1) (x2, y2) c b = canMoveBishop (x1, y1) (x2, y2) c b || canMoveRook (x1, y1) (x2, y2) c b
 
 getColor :: Tile -> Color
 getColor Empty = error ""
@@ -145,3 +202,4 @@ testBoard = [ testRow1
 b1 = movePiece (1, 0) (3, 0) testBoard
 b2 = movePiece (6, 1) (4, 1) b1
 b3 = movePiece (3,0) (4,1) b2
+ 
