@@ -74,8 +74,9 @@ movePiece (x1, y1) (x2, y2) b =
 -- TODO: Check if to tile is empty or opposite team here
 canMove :: (Int, Int) -> (Int, Int) -> Board -> Bool
 canMove (x1, y1) (x2, y2) b
-    |(x1 == x2) && (y1 == y2) = False
-    |otherwise = 
+    | (x1 == x2) && (y1 == y2)                 = False
+    | team1 == team2 = False
+    | otherwise = 
         case (getTile (x1, y1) b) of
             Empty    -> False
             Pawn   c -> canMovePawn (x1, y1) (x2, y2) c b
@@ -84,6 +85,8 @@ canMove (x1, y1) (x2, y2) b
             Bishop c -> canMoveBishop (x1, y1) (x2, y2) c b
             Queen  c -> canMoveQueen (x1, y1) (x2, y2) c b
             King   c -> canMoveKing (x1, y1) (x2, y2) c b
+    where team1 = getColor (getTile (x1, y1) b)
+          team2 = getColor (getTile (x2, y2) b)
 
 canMovePawn :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
 canMovePawn (x1, y1) (x2, y2) c b =
@@ -108,7 +111,7 @@ canMovePawn (x1, y1) (x2, y2) c b =
                             x1 - x2 == 1 && abs (y1 - y2) == 1
 
 canMoveRook :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
-canMoveRook (x1,y1) (x2,y2) c b = (t2 == Empty || getColor t2 /= c) && canMoveRook' (x1,y1) (x2,y2) b 
+canMoveRook (x1,y1) (x2,y2) c b = canMoveRook' (x1,y1) (x2,y2) b 
     where t2 = getTile (x2,y2) b
 
 canMoveRook' :: (Int, Int) -> (Int, Int) -> Board -> Bool
@@ -137,7 +140,7 @@ canMoveRook' (x1,y1) (x2,y2) b
     |otherwise = False
 
 canMoveBishop :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
-canMoveBishop (x1,y1) (x2,y2) c b = (t2 == Empty || getColor t2 /= c) && canMoveBishop' (x1,y1) (x2,y2) b 
+canMoveBishop (x1,y1) (x2,y2) c b = canMoveBishop' (x1,y1) (x2,y2) b 
     where t2 = getTile (x2,y2) b
 
 canMoveBishop' :: (Int, Int) -> (Int, Int) -> Board -> Bool
@@ -172,15 +175,13 @@ canMoveQueen :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
 canMoveQueen (x1, y1) (x2, y2) c b = canMoveBishop (x1, y1) (x2, y2) c b || canMoveRook (x1, y1) (x2, y2) c b
 
 canMoveKnight :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
-canMoveKnight (x1, y1) (x2, y2) c b 
-    =  (t2 == Empty || getColor t2 /= c)
-    && ((abs (x1 - x2) == 1 && abs (y1 - y2) == 2) || (abs (x1 - x2) == 2 && abs (y1 - y2) == 1))
+canMoveKnight (x1, y1) (x2, y2) c b =
+    ((abs (x1 - x2) == 1 && abs (y1 - y2) == 2) || (abs (x1 - x2) == 2 && abs (y1 - y2) == 1))
     where t2 = getTile (x2,y2) b
 
 canMoveKing :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
-canMoveKing (x1, y1) (x2, y2) c b
-    =  (t2 == Empty || getColor t2 /= c)
-    && ((abs (x1 - x2) == 1 && (y1 == y2 || abs (y1 - y2) == 1)) || (abs (y1 - y2) == 1 && (x1 == x2 || abs (x1 - x2) == 1)))  
+canMoveKing (x1, y1) (x2, y2) c b = 
+    ((abs (x1 - x2) == 1 && (y1 == y2 || abs (y1 - y2) == 1)) || (abs (y1 - y2) == 1 && (x1 == x2 || abs (x1 - x2) == 1)))  
     where t2 = getTile (x2,y2) b
 
 getColor :: Tile -> Color
@@ -212,12 +213,21 @@ testBoard = [ testRow1
             , testRow7
             , testRow8 ] 
 
-b1 = movePiece (1, 0) (3, 0) testBoard
-b2 = movePiece (6, 1) (4, 1) b1
-b3 = movePiece (3, 0) (4, 1) b2
-b4 = movePiece (0, 2) (0, 3) b3
-b5 = movePiece (0, 1) (2, 2) b4
-b6 = movePiece (7, 4) (6, 4) b5
-b7 = movePiece (6, 4) (5, 4) b6
-b8 = movePiece (7, 4) (6, 4) b7
+b1  = movePiece (1, 0) (3, 0) testBoard
+b2  = movePiece (6, 1) (4, 1) b1
+b3  = movePiece (3, 0) (4, 1) b2
+b4  = movePiece (0, 2) (0, 3) b3
+b5  = movePiece (0, 1) (2, 2) b4
+b6  = movePiece (7, 4) (6, 4) b5
+b7  = movePiece (6, 4) (5, 4) b6
+b8  = movePiece (7, 4) (6, 4) b7
+b9  = movePiece (7, 4) (6, 4) b8
+b10 = movePiece (7, 4) (6, 4) b9
+b11 = movePiece (7, 4) (6, 4) b10
+b12 = movePiece (7, 4) (6, 4) b11
+b13 = movePiece (7, 4) (6, 4) b12
+b14 = movePiece (7, 4) (6, 4) b13
+b15 = movePiece (7, 4) (6, 4) b14
+b16 = movePiece (7, 4) (6, 4) b15
+b17 = movePiece (7, 4) (6, 4) b16
  
