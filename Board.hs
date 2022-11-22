@@ -1,16 +1,16 @@
 module Board where
 
 --  todo: change Tile type
-data Color = Black
+data Team = Black
            | White
            deriving(Eq)
 
-data Tile = Pawn Color
-          | Rook Color
-          | Knight Color
-          | Bishop Color
-          | Queen Color
-          | King Color
+data Tile = Pawn Team
+          | Rook Team
+          | Knight Team
+          | Bishop Team
+          | Queen Team
+          | King Team
           | Empty
           deriving(Eq)
     
@@ -85,10 +85,10 @@ canMove (x1, y1) (x2, y2) b
             Bishop c -> canMoveBishop (x1, y1) (x2, y2) c b
             Queen  c -> canMoveQueen (x1, y1) (x2, y2) c b
             King   c -> canMoveKing (x1, y1) (x2, y2) c b
-    where team1 = getColor (getTile (x1, y1) b)
-          team2 = getColor (getTile (x2, y2) b)
+    where team1 = getTeam (getTile (x1, y1) b)
+          team2 = getTeam (getTile (x2, y2) b)
 
-canMovePawn :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMovePawn :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMovePawn (x1, y1) (x2, y2) c b =
     case c of
         Black -> 
@@ -96,7 +96,7 @@ canMovePawn (x1, y1) (x2, y2) c b =
                 Empty -> 
                     x2 - x1 == 1 || (x1 == 1 && x2 == 3) 
                 x     -> 
-                    case getColor x of
+                    case getTeam x of
                         Just Black -> False
                         Just White -> x2 - x1 == 1 && abs (y1 - y2) == 1
         White -> 
@@ -104,11 +104,11 @@ canMovePawn (x1, y1) (x2, y2) c b =
                 Empty -> 
                     x1 - x2 == 1 || (x1 == 6 &&  x2 == 4) 
                 x     -> 
-                    case getColor x of
+                    case getTeam x of
                         Just White -> False
                         Just Black -> x1 - x2 == 1 && abs (y1 - y2) == 1
 
-canMoveRook :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMoveRook :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMoveRook (x1,y1) (x2,y2) c b = canMoveRook' (x1,y1) (x2,y2) b 
     where t2 = getTile (x2,y2) b
 
@@ -137,7 +137,7 @@ canMoveRook' (x1,y1) (x2,y2) b
                     x     -> (x1 - 1) == x2  
     |otherwise = False
 
-canMoveBishop :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMoveBishop :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMoveBishop (x1,y1) (x2,y2) c b = canMoveBishop' (x1,y1) (x2,y2) b 
     where t2 = getTile (x2,y2) b
 
@@ -169,28 +169,28 @@ canMoveBishop' (x1,y1) (x2,y2) b
                             x     -> (x1 - 1, y1 - 1) == (x2, y2)
 
 
-canMoveQueen :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMoveQueen :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMoveQueen (x1, y1) (x2, y2) c b = canMoveBishop (x1, y1) (x2, y2) c b || canMoveRook (x1, y1) (x2, y2) c b
 
-canMoveKnight :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMoveKnight :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMoveKnight (x1, y1) (x2, y2) c b =
     ((abs (x1 - x2) == 1 && abs (y1 - y2) == 2) || (abs (x1 - x2) == 2 && abs (y1 - y2) == 1))
     where t2 = getTile (x2,y2) b
 
-canMoveKing :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMoveKing :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMoveKing (x1, y1) (x2, y2) c b = 
     ((abs (x1 - x2) == 1 && (y1 == y2 || abs (y1 - y2) == 1)) || (abs (y1 - y2) == 1 && (x1 == x2 || abs (x1 - x2) == 1)))  
     where t2 = getTile (x2,y2) b
 
-getColor :: Tile -> Maybe Color
-getColor Empty          = Nothing
-getColor (Pawn White)   = Just White
-getColor (Rook White)   = Just White
-getColor (Bishop White) = Just White
-getColor (Knight White) = Just White
-getColor (Queen White)  = Just White
-getColor (King White)   = Just White
-getColor _              = Just Black
+getTeam :: Tile -> Maybe Team
+getTeam Empty          = Nothing
+getTeam (Pawn White)   = Just White
+getTeam (Rook White)   = Just White
+getTeam (Bishop White) = Just White
+getTeam (Knight White) = Just White
+getTeam (Queen White)  = Just White
+getTeam (King White)   = Just White
+getTeam _              = Just Black
 
 
 testRow1 = [Rook Black, Knight Black, Bishop Black, Queen Black, King Black, Bishop Black, Knight Black, Rook Black]
