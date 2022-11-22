@@ -71,18 +71,19 @@ movePiece (x1, y1) (x2, y2) b =
         else 
             b
 
+-- TODO: Check if to tile is empty or opposite team here
 canMove :: (Int, Int) -> (Int, Int) -> Board -> Bool
 canMove (x1, y1) (x2, y2) b
     |(x1 == x2) && (y1 == y2) = False
     |otherwise = 
         case (getTile (x1, y1) b) of
-            Empty  -> False
+            Empty    -> False
             Pawn   c -> canMovePawn (x1, y1) (x2, y2) c b
             Rook   c -> canMoveRook (x1, y1) (x2, y2) c b
-            -- Knight -> canMoveKnight (x1, y1) (x2, y2) b
+            Knight c -> canMoveKnight (x1, y1) (x2, y2) c b
             Bishop c -> canMoveBishop (x1, y1) (x2, y2) c b
             Queen  c -> canMoveQueen (x1, y1) (x2, y2) c b
-            -- King   -> canMoveKing (x1, y1) (x2, y2) b
+            King   c -> canMoveKing (x1, y1) (x2, y2) c b
 
 canMovePawn :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
 canMovePawn (x1, y1) (x2, y2) c b =
@@ -170,15 +171,27 @@ canMoveBishop' (x1,y1) (x2,y2) b
 canMoveQueen :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
 canMoveQueen (x1, y1) (x2, y2) c b = canMoveBishop (x1, y1) (x2, y2) c b || canMoveRook (x1, y1) (x2, y2) c b
 
+canMoveKnight :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMoveKnight (x1, y1) (x2, y2) c b 
+    =  (t2 == Empty || getColor t2 /= c)
+    && ((abs (x1 - x2) == 1 && abs (y1 - y2) == 2) || (abs (x1 - x2) == 2 && abs (y1 - y2) == 1))
+    where t2 = getTile (x2,y2) b
+
+canMoveKing :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMoveKing (x1, y1) (x2, y2) c b
+    =  (t2 == Empty || getColor t2 /= c)
+    && ((abs (x1 - x2) == 1 && (y1 == y2 || abs (y1 - y2) == 1)) || (abs (y1 - y2) == 1 && (x1 == x2 || abs (x1 - x2) == 1)))  
+    where t2 = getTile (x2,y2) b
+
 getColor :: Tile -> Color
 getColor Empty = error ""
-getColor (Pawn White) = White
-getColor (Rook White) = White
+getColor (Pawn White)   = White
+getColor (Rook White)   = White
 getColor (Bishop White) = White
 getColor (Knight White) = White
-getColor (Queen White) = White
-getColor (King White) = White
-getColor _            = Black
+getColor (Queen White)  = White
+getColor (King White)   = White
+getColor _              = Black
 
 
 testRow1 = [Rook Black, Knight Black, Bishop Black, Queen Black, King Black, Bishop Black, Knight Black, Rook Black]
@@ -201,5 +214,10 @@ testBoard = [ testRow1
 
 b1 = movePiece (1, 0) (3, 0) testBoard
 b2 = movePiece (6, 1) (4, 1) b1
-b3 = movePiece (3,0) (4,1) b2
+b3 = movePiece (3, 0) (4, 1) b2
+b4 = movePiece (0, 2) (0, 3) b3
+b5 = movePiece (0, 1) (2, 2) b4
+b6 = movePiece (7, 4) (6, 4) b5
+b7 = movePiece (6, 4) (5, 4) b6
+b8 = movePiece (7, 4) (6, 4) b7
  
