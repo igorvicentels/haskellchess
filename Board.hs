@@ -73,17 +73,17 @@ canMove :: (Int, Int) -> (Int, Int) -> Board -> Bool
 canMove (x1, y1) (x2, y2) b =
     case (getTile (x1, y1) b) of
         Empty  -> False
-        Pawn _   -> canMovePawn (x1, y1) (x2, y2) b
-        -- Rook   -> CanMoveRook (x1, y1) (x2, y2) b
+        Pawn c -> canMovePawn (x1, y1) (x2, y2) c b
+        -- Rook c -> CanMoveRook (x1, y1) (x2, y2) c b
         -- Knight -> CanMoveKnight (x1, y1) (x2, y2) b
         -- Bishop -> CanMoveBishop (x1, y1) (x2, y2) b
         -- Queen  -> CanMoveQueen (x1, y1) (x2, y2) b
         -- King   -> CanMoveKing (x1, y1) (x2, y2) b
 
-canMovePawn :: (Int, Int) -> (Int, Int) -> Board -> Bool
-canMovePawn (x1, y1) (x2, y2) b =
-    case getTile (x1, y1) b of
-        Pawn Black -> 
+canMovePawn :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+canMovePawn (x1, y1) (x2, y2) c b =
+    case c of
+        Black -> 
             case getTile (x2, y2) b of
                 Empty -> 
                     x2 - x1 == 1 || (x1 == 1 && x2 == 3) 
@@ -92,7 +92,7 @@ canMovePawn (x1, y1) (x2, y2) b =
                         Black -> False
                         White -> 
                             x2 - x1 == 1 && abs (y1 - y2) == 1
-        Pawn White -> 
+        White -> 
             case getTile (x2, y2) b of
                 Empty -> 
                     x1 - x2 == 1 || (x1 == 6 &&  x2 == 4) 
@@ -101,6 +101,16 @@ canMovePawn (x1, y1) (x2, y2) b =
                         White -> False
                         Black -> 
                             x1 - x2 == 1 && abs (y1 - y2) == 1
+
+-- canMoveRook :: (Int, Int) -> (Int, Int) -> Color -> Board -> Bool
+-- canMoveRook (x1,y1) (x2,y2) c b = (t2 == Empty || getColor t2 /= c) && canMoveRook' (x1,y1) (x2,y2) b 
+--     where t2 = getTile (x2,y2) b
+
+-- canMoveRook' :: (Int, Int) -> (Int, Int) -> Board -> Bool
+-- canMoveRook' (x1,y1) (x2,y2) b =
+--     | x1 == x2 = case getTile (x2,y2) b of 
+--                     Empty -> canMoveRook' 
+
 
 
 getColor :: Tile -> Color
