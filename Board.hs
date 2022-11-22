@@ -4,8 +4,6 @@ module Board where
 data Color = Black
            | White
 
-
-
 data Tile = Pawn Color
           | Rook Color
           | Knight Color
@@ -72,12 +70,48 @@ movePiece (x1, y1) (x2, y2) b =
             b
 
 canMove :: (Int, Int) -> (Int, Int) -> Board -> Bool
-canMove (x1, y1) (x2, y2) b = True
-    -- case (getTile (x1, y1) b) of
-        -- Empty -> False
+canMove (x1, y1) (x2, y2) b =
+    case (getTile (x1, y1) b) of
+        Empty  -> False
+        Pawn _   -> canMovePawn (x1, y1) (x2, y2) b
+        -- Rook   -> CanMoveRook (x1, y1) (x2, y2) b
+        -- Knight -> CanMoveKnight (x1, y1) (x2, y2) b
+        -- Bishop -> CanMoveBishop (x1, y1) (x2, y2) b
+        -- Queen  -> CanMoveQueen (x1, y1) (x2, y2) b
+        -- King   -> CanMoveKing (x1, y1) (x2, y2) b
+
+canMovePawn :: (Int, Int) -> (Int, Int) -> Board -> Bool
+canMovePawn (x1, y1) (x2, y2) b =
+    case getTile (x1, y1) b of
+        Pawn Black -> 
+            case getTile (x2, y2) b of
+                Empty -> 
+                    x2 - x1 == 1 || (x1 == 1 && x2 == 3) 
+                x     -> 
+                    case getColor x of
+                        Black -> False
+                        White -> 
+                            x2 - x1 == 1 && abs (y1 - y2) == 1
+        Pawn White -> 
+            case getTile (x2, y2) b of
+                Empty -> 
+                    x1 - x2 == 1 || (x1 == 6 &&  x2 == 4) 
+                x     -> 
+                    case getColor x of
+                        White -> False
+                        Black -> 
+                            x1 - x2 == 1 && abs (y1 - y2) == 1
 
 
-
+getColor :: Tile -> Color
+getColor Empty = error ""
+getColor (Pawn White) = White
+getColor (Rook White) = White
+getColor (Bishop White) = White
+getColor (Knight White) = White
+getColor (Queen White) = White
+getColor (King White) = White
+getColor _            = Black
 
 
 testRow1 = [Rook Black, Knight Black, Bishop Black, Queen Black, King Black, Bishop Black, Knight Black, Rook Black]
@@ -97,3 +131,7 @@ testBoard = [ testRow1
             , testRow6
             , testRow7
             , testRow8 ] 
+
+b1 = movePiece (1, 0) (3, 0) testBoard
+b2 = movePiece (6, 1) (4, 1) b1
+b3 = movePiece (3,0) (4,1) b2
