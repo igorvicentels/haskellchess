@@ -1,18 +1,20 @@
 module Board where
 
+--  todo: change Tile type
+
 data Tile = BPawn
-           | BRook
-           | BKnight
-           | BBishop
-           | BQueen
-           | BKing
-           | WPawn
-           | WRook
-           | WKnight
-           | WBishop
-           | WQueen
-           | WKing
-           | Empty
+          | BRook
+          | BKnight
+          | BBishop
+          | BQueen
+          | BKing
+          | WPawn
+          | WRook
+          | WKnight
+          | WBishop
+          | WQueen
+          | WKing
+          | Empty
     
 instance Show Tile where
     show BPawn   = "p"
@@ -32,25 +34,25 @@ instance Show Tile where
 type Board = [[Tile]]
 -- TODO: verify number of rows and columns
 
-printRow :: [Tile] -> IO ()
-printRow []     = return () 
-printRow [x]    = putStrLn $ show x 
-printRow (x:xs) = do putStr $ show x 
-                     putStr " | "
-                     printRow xs
+showRow :: [Tile] -> IO ()
+showRow []     = return () 
+showRow [x]    = putStrLn $ show x 
+showRow (x:xs) = do putStr $ show x 
+                    putStr " | "
+                    showRow xs
 
-printLine :: IO ()
-printLine = putStrLn "------------------------------"
+showLine :: IO ()
+showLine = putStrLn "------------------------------"
 
-printBoard :: Board -> IO ()
-printBoard []     = return ()
-printBoard [x]    = printRow x
-printBoard (x:xs) = do printRow x
-                       printLine 
-                       printBoard xs
+showBoard :: Board -> IO ()
+showBoard []     = return ()
+showBoard [x]    = showRow x
+showBoard (x:xs) = do showRow x
+                      showLine 
+                      showBoard xs
 
-getPiece :: Int -> Int -> Board -> Tile
-getPiece x y b
+getTile :: (Int, Int) -> Board -> Tile
+getTile (x, y) b
     | x < 0 || y < 0 || x > 7 || y > 7 = error "invalid index"
     | otherwise                        = b !! y !! x
 
@@ -64,9 +66,18 @@ setTile' x t (y:ys) = y : setTile' (x-1) t ys
 
 movePiece :: (Int, Int) -> (Int, Int) -> Board -> Board
 movePiece (x1, y1) (x2, y2) b = 
-    case (getPiece x1 y1 b) of
-        Empty   -> error ""
-        x       -> setTile (x1, y1) Empty (setTile (x2, y2) x b)
+    if canMove (x1, y1) (x2, y2) b 
+        then
+            let x = getTile (x1, y1) b 
+            in setTile (x1, y1) Empty (setTile (x2, y2) x b)
+        else 
+            b
+
+canMove :: (Int, Int) -> (Int, Int) -> Board -> Bool
+canMove (x1, y1) (x2, y2) b = 
+    case (getTile (x1, y1) b) of
+        Empty -> False
+
 
 
 
