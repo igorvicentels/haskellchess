@@ -49,10 +49,10 @@ showBoard (x:xs) = do showRow x
                       showLine 
                       showBoard xs
 
-getTile :: (Int, Int) -> Board -> Tile
+getTile :: (Int, Int) -> Board -> Maybe Tile
 getTile (x, y) b
-    | x < 0 || y < 0 || x > 7 || y > 7 = error "invalid index"
-    | otherwise                        = b !! x !! y
+    | x < 0 || y < 0 || x > 7 || y > 7 = Nothing
+    | otherwise                        = Just $ b !! x !! y
 
 setTile :: (Int, Int) -> Tile -> Board -> Board
 setTile (0, y) t (r:rs) = setTile' y t r : rs
@@ -66,8 +66,10 @@ movePiece :: (Int, Int) -> (Int, Int) -> Board -> Board
 movePiece (x1, y1) (x2, y2) b = 
     if canMove (x1, y1) (x2, y2) b 
         then
-            let x = getTile (x1, y1) b 
-            in setTile (x1, y1) Empty (setTile (x2, y2) x b)
+            let t = getTile (x1, y1) b in
+                case t of
+                    Nothing -> b
+                    Just t' -> setTile (x1, y1) Empty (setTile (x2, y2) t' b)
         else 
             b
 
@@ -78,32 +80,33 @@ canMove (x1, y1) (x2, y2) b
     | team1 == team2 = False
     | otherwise = 
         case (getTile (x1, y1) b) of
-            Empty    -> False
-            Pawn   c -> canMovePawn (x1, y1) (x2, y2) c b
-            Rook   c -> canMoveRook (x1, y1) (x2, y2) c b
-            Knight c -> canMoveKnight (x1, y1) (x2, y2) c b
-            Bishop c -> canMoveBishop (x1, y1) (x2, y2) c b
-            Queen  c -> canMoveQueen (x1, y1) (x2, y2) c b
-            King   c -> canMoveKing (x1, y1) (x2, y2) c b
-    where team1 = getTeam (getTile (x1, y1) b)
-          team2 = getTeam (getTile (x2, y2) b)
+            Nothing         -> False
+            Just (Empty)    -> False
+            Just (Pawn   c) -> canMovePawn (x1, y1) (x2, y2) c b
+            Just (Rook   c) -> canMoveRook (x1, y1) (x2, y2) c b
+            Just (Knight c) -> canMoveKnight (x1, y1) (x2, y2) c b
+            Just (Bishop c) -> canMoveBishop (x1, y1) (x2, y2) c b
+            Just (Queen  c) -> canMoveQueen (x1, y1) (x2, y2) c b
+            Just (King   c) -> canMoveKing (x1, y1) (x2, y2) c b
+    where team1 = fmap getTeam (getTile (x1, y1) b)
+          team2 = fmap getTeam (getTile (x2, y2) b)
 
 canMovePawn :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMovePawn (x1, y1) (x2, y2) c b =
     case c of
         Black -> 
             case getTile (x2, y2) b of
-                Empty -> 
+                Just Empty -> 
                     x2 - x1 == 1 || (x1 == 1 && x2 == 3) 
-                x     -> 
+                Just x     -> 
                     case getTeam x of
                         Just Black -> False
                         Just White -> x2 - x1 == 1 && abs (y1 - y2) == 1
         White -> 
             case getTile (x2, y2) b of
-                Empty -> 
+                Just Empty -> 
                     x1 - x2 == 1 || (x1 == 6 &&  x2 == 4) 
-                x     -> 
+                Just x     -> 
                     case getTeam x of
                         Just White -> False
                         Just Black -> x1 - x2 == 1 && abs (y1 - y2) == 1
@@ -118,22 +121,22 @@ canMoveRook' (x1,y1) (x2,y2) b
         if (y1 < y2)
             then
                 case getTile (x1, y1 + 1) b of 
-                    Empty -> canMoveRook' (x1, y1 + 1) (x2, y2) b
-                    x     -> (y1 + 1) == y2 
+                    Just Empty -> canMoveRook' (x1, y1 + 1) (x2, y2) b
+                    Just x     -> (y1 + 1) == y2 
             else
                 case getTile (x1, y1 - 1) b of 
-                    Empty -> canMoveRook' (x1, y1 - 1) (x2, y2) b
-                    x     -> (y1 - 1) == y2
+                    Just Empty -> canMoveRook' (x1, y1 - 1) (x2, y2) b
+                    Just x     -> (y1 - 1) == y2
     |(y1 == y2) = 
         if (x1 < x2)
             then
                 case getTile (x1 + 1, y1) b of 
-                    Empty -> canMoveRook' (x1 + 1, y1) (x2, y2) b
-                    x     -> (x1 + 1) == x2
+                    Just Empty -> canMoveRook' (x1 + 1, y1) (x2, y2) b
+                    Just x     -> (x1 + 1) == x2
             else
                 case getTile (x1 - 1, y2) b of 
-                    Empty -> canMoveRook' (x1 - 1,y1) (x2, y2) b
-                    x     -> (x1 - 1) == x2  
+                    Just Empty -> canMoveRook' (x1 - 1,y1) (x2, y2) b
+                    Just x     -> (x1 - 1) == x2  
     |otherwise = False
 
 canMoveBishop :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
@@ -149,22 +152,22 @@ canMoveBishop' (x1,y1) (x2,y2) b
                 if (x1 < x2)
                     then
                         case getTile (x1 + 1, y1 + 1) b of 
-                            Empty -> canMoveBishop' (x1 + 1, y1 + 1) (x2, y2) b
-                            x     -> (x1 + 1, y1 + 1) == (x2, y2) 
+                            Just Empty -> canMoveBishop' (x1 + 1, y1 + 1) (x2, y2) b
+                            Just x     -> (x1 + 1, y1 + 1) == (x2, y2) 
                     else
                         case getTile (x1 - 1, y1 + 1) b of 
-                            Empty -> canMoveBishop' (x1 - 1, y1 + 1) (x2, y2) b
-                            x     -> (x1 - 1, y1 + 1) == (x2, y2)
+                            Just Empty -> canMoveBishop' (x1 - 1, y1 + 1) (x2, y2) b
+                            Just x     -> (x1 - 1, y1 + 1) == (x2, y2)
             else
                 if (x1 < x2)
                     then
                         case getTile (x1 + 1, y1 - 1) b of 
-                            Empty -> canMoveBishop' (x1 + 1, y1 - 1) (x2, y2) b
-                            x     -> (x1 + 1, y1 - 1) == (x2, y2) 
+                            Just Empty -> canMoveBishop' (x1 + 1, y1 - 1) (x2, y2) b
+                            Just x     -> (x1 + 1, y1 - 1) == (x2, y2) 
                     else
                         case getTile (x1 - 1, y1 - 1) b of 
-                            Empty -> canMoveBishop' (x1 - 1, y1 - 1) (x2, y2) b
-                            x     -> (x1 - 1, y1 - 1) == (x2, y2)
+                            Just Empty -> canMoveBishop' (x1 - 1, y1 - 1) (x2, y2) b
+                            Just x     -> (x1 - 1, y1 - 1) == (x2, y2)
 
 
 canMoveQueen :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
@@ -187,6 +190,38 @@ getTeam (Knight White) = Just White
 getTeam (Queen White)  = Just White
 getTeam (King White)   = Just White
 getTeam _              = Just Black
+
+-- isAttacked :: (Int, Int) -> Board -> Bool
+-- isAttacked (x,y) b =  -- isAttackedByPawn (x,y) mt b 
+--                 --    || isAttackedByRook (x,y) mt b 
+--                     isAttackedByKnight (x,y) mt b
+--                 --    || isAttackedByBishop (x,y) mt b
+--                 --    || isAttackedByQueen (x,y) mt b
+--                 --    || isAttackedByKing (x,y) mt b
+--                 where mt = getTeam (getTile (x,y) b)
+
+-- isAttackedByKnight :: (Int, Int) -> Maybe Team -> Board -> Bool
+-- isAttackedByKnight (x,y) mt b = 
+--     case mt of
+--         Nothing -> False -- Probably theres no need for it
+--         Just White -> 
+--             getTile (x - 1, y - 2) b == Knight Black ||
+--             getTile (x - 1, y + 2) b == Knight Black ||
+--             getTile (x + 1, y - 2) b == Knight Black ||
+--             getTile (x + 1, y + 2) b == Knight Black ||
+--             getTile (x - 2, y - 1) b == Knight Black ||
+--             getTile (x - 2, y + 1) b == Knight Black ||
+--             getTile (x + 2, y - 1) b == Knight Black ||
+--             getTile (x + 2, y + 1) b == Knight Black
+--         Just Black -> 
+--             getTile (x - 1, y - 2) b == Knight White ||
+--             getTile (x - 1, y + 2) b == Knight White ||
+--             getTile (x + 1, y - 2) b == Knight White ||
+--             getTile (x + 1, y + 2) b == Knight White ||
+--             getTile (x - 2, y - 1) b == Knight White ||
+--             getTile (x - 2, y + 1) b == Knight White ||
+--             getTile (x + 2, y - 1) b == Knight White ||
+--             getTile (x + 2, y + 1) b == Knight White
 
 
 testRow1 = [Rook Black, Knight Black, Bishop Black, Queen Black, King Black, Bishop Black, Knight Black, Rook Black]
