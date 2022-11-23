@@ -114,43 +114,37 @@ canMovePawn (x1, y1) (x2, y2) c b =
                         Just Black -> x1 - x2 == 1 && abs (y1 - y2) == 1
 
 canMoveRook :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
-canMoveRook (x1,y1) (x2,y2) c b = canMoveRook' (x1,y1) (x2,y2) b 
-
-canMoveRook' :: (Int, Int) -> (Int, Int) -> Board -> Bool
-canMoveRook' (x1,y1) (x2,y2) b
-    |(x1 == x2) && (y1 == y2) = True --talvez tirar essa linha 
+canMoveRook (x1,y1) (x2,y2) c b
+    |(x1 == x2) && (y1 == y2) = True
     |(x1 == x2) = 
         if (y1 < y2)
             then
                 case getTile (x1, y1 + 1) b of 
                     Nothing -> False
-                    Just Empty -> canMoveRook' (x1, y1 + 1) (x2, y2) b
+                    Just Empty -> canMoveRook (x1, y1 + 1) (x2, y2) c b
                     Just x     -> (y1 + 1) == y2 
             else
                 case getTile (x1, y1 - 1) b of 
                     Nothing -> False
-                    Just Empty -> canMoveRook' (x1, y1 - 1) (x2, y2) b
+                    Just Empty -> canMoveRook (x1, y1 - 1) (x2, y2) c b
                     Just x     -> (y1 - 1) == y2
     |(y1 == y2) = 
         if (x1 < x2)
             then
                 case getTile (x1 + 1, y1) b of 
                     Nothing -> False
-                    Just Empty -> canMoveRook' (x1 + 1, y1) (x2, y2) b
+                    Just Empty -> canMoveRook (x1 + 1, y1) (x2, y2) c b
                     Just x     -> (x1 + 1) == x2
             else
                 case getTile (x1 - 1, y2) b of 
                     Nothing -> False
-                    Just Empty -> canMoveRook' (x1 - 1,y1) (x2, y2) b
+                    Just Empty -> canMoveRook (x1 - 1,y1) (x2, y2) c b
                     Just x     -> (x1 - 1) == x2  
     |otherwise = False
 
 canMoveBishop :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
-canMoveBishop (x1,y1) (x2,y2) c b = canMoveBishop' (x1,y1) (x2,y2) b 
-
-canMoveBishop' :: (Int, Int) -> (Int, Int) -> Board -> Bool
-canMoveBishop' (x1,y1) (x2,y2) b
-    |(x1 == x2) && (y1 == y2) = True --talvez tirar isso
+canMoveBishop (x1,y1) (x2,y2) c b
+    |(x1 == x2) && (y1 == y2) = True
     |abs(x1 - x2) /= abs(y1 - y2) = False
     |otherwise = 
         if (y1 < y2) 
@@ -159,24 +153,24 @@ canMoveBishop' (x1,y1) (x2,y2) b
                     then
                         case getTile (x1 + 1, y1 + 1) b of 
                             Nothing -> False
-                            Just Empty -> canMoveBishop' (x1 + 1, y1 + 1) (x2, y2) b
+                            Just Empty -> canMoveBishop (x1 + 1, y1 + 1) (x2, y2) c b
                             Just x     -> (x1 + 1, y1 + 1) == (x2, y2) 
                     else
                         case getTile (x1 - 1, y1 + 1) b of 
                             Nothing -> False
-                            Just Empty -> canMoveBishop' (x1 - 1, y1 + 1) (x2, y2) b
+                            Just Empty -> canMoveBishop (x1 - 1, y1 + 1) (x2, y2) c b
                             Just x     -> (x1 - 1, y1 + 1) == (x2, y2)
             else
                 if (x1 < x2)
                     then
                         case getTile (x1 + 1, y1 - 1) b of 
                             Nothing -> False
-                            Just Empty -> canMoveBishop' (x1 + 1, y1 - 1) (x2, y2) b
+                            Just Empty -> canMoveBishop (x1 + 1, y1 - 1) (x2, y2) c b
                             Just x     -> (x1 + 1, y1 - 1) == (x2, y2) 
                     else
                         case getTile (x1 - 1, y1 - 1) b of 
                             Nothing -> False
-                            Just Empty -> canMoveBishop' (x1 - 1, y1 - 1) (x2, y2) b
+                            Just Empty -> canMoveBishop (x1 - 1, y1 - 1) (x2, y2) c b
                             Just x     -> (x1 - 1, y1 - 1) == (x2, y2)
 
 
