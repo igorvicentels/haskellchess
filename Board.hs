@@ -1,5 +1,7 @@
 module Board where
 
+import Data.Maybe
+
 --  todo: change Tile type
 data Team = Black
            | White
@@ -196,11 +198,9 @@ isAttacked (x,y) b =
     case getTile (x,y) b of
         Nothing -> False -- Check if the return type must be maybe bool
         Just t  -> 
-            isAttackedByPawn (x,y) mt b || 
-            -- isAttackedByHorizontal (x,y) mt b ||
+            isAttackedByPawn (x,y)   mt b ||
+            isAttackedLine   (x,y)   mt b ||
             isAttackedByKnight (x,y) mt b 
-            -- isAttackedByBishop (x,y) mt b
-            -- isAttackedByQueen (x,y) mt b
             -- isAttackedByKing (x,y) mt b
             where mt = getTeam t
 
@@ -211,7 +211,38 @@ isAttackedByPawn (x,y) (Just White) b =
     getTile (x - 1, y + 1) b == Just (Pawn Black)
 isAttackedByPawn (x,y) (Just Black) b =
     getTile (x + 1, y - 1) b == Just (Pawn White) ||
-    getTile (x + 1, y - 1) b == Just (Pawn White)    
+    getTile (x + 1, y + 1) b == Just (Pawn White)
+
+isAttackedLine :: (Int, Int) -> Maybe Team -> Board -> Bool
+isAttackedLine (x,y) Nothing b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
+isAttackedLine (x,y) t       b = 
+    isAttackedLine' (x,y) succ id   t b ||
+    isAttackedLine' (x,y) succ pred t b ||
+    isAttackedLine' (x,y) succ succ t b ||
+    isAttackedLine' (x,y) pred id   t b ||
+    isAttackedLine' (x,y) pred pred t b ||
+    isAttackedLine' (x,y) pred succ t b ||
+    isAttackedLine' (x,y) id   pred t b ||
+    isAttackedLine' (x,y) id   succ t b
+
+-- TODO: check t2 type
+isAttackedLine' :: (Int, Int) -> (Int -> Int) -> (Int -> Int) -> Maybe Team -> Board -> Bool
+isAttackedLine' (x,y) _ _ Nothing b = False  -- "unnecessary"
+isAttackedLine' (x,y) f g t1      b = 
+    case fmap getTeam (getTile (f x, g y) b) of
+        Nothing -> False
+        Just t2 ->
+            if t1 == t2 
+                then
+                    False
+                else
+                    case getTile (f x, g y) b of
+                        Just (Queen t2)  -> True
+                        Just (Rook t2)   -> f x == id x || g y == id y
+                        Just (Bishop t2) -> f x /= id x && g y /= id y
+                        Just Empty       -> isAttackedLine' (f x, g y) f g t1 b
+                        _                -> False
+
 
 isAttackedByKnight :: (Int, Int) -> Maybe Team -> Board -> Bool
 isAttackedByKnight (x,y) Nothing      b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
