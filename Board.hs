@@ -191,6 +191,49 @@ canMoveKing :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
 canMoveKing (x1, y1) (x2, y2) c b = 
     ((abs (x1 - x2) == 1 && (y1 == y2 || abs (y1 - y2) == 1)) || (abs (y1 - y2) == 1 && (x1 == x2 || abs (x1 - x2) == 1)))  
 
+isAttacked :: (Int, Int) -> Board -> Bool
+isAttacked (x,y) b =  
+    case getTile (x,y) b of
+        Nothing -> False -- Check if the return type must be maybe bool
+        Just t  -> 
+            isAttackedByPawn (x,y) mt b || 
+            -- isAttackedByHorizontal (x,y) mt b ||
+            isAttackedByKnight (x,y) mt b 
+            -- isAttackedByBishop (x,y) mt b
+            -- isAttackedByQueen (x,y) mt b
+            -- isAttackedByKing (x,y) mt b
+            where mt = getTeam t
+
+isAttackedByPawn :: (Int, Int) -> Maybe Team -> Board -> Bool
+isAttackedByPawn (x,y) Nothing      b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
+isAttackedByPawn (x,y) (Just White) b =
+    getTile (x - 1, y - 1) b == Just (Pawn Black) ||
+    getTile (x - 1, y + 1) b == Just (Pawn Black)
+isAttackedByPawn (x,y) (Just Black) b =
+    getTile (x + 1, y - 1) b == Just (Pawn White) ||
+    getTile (x + 1, y - 1) b == Just (Pawn White)    
+
+isAttackedByKnight :: (Int, Int) -> Maybe Team -> Board -> Bool
+isAttackedByKnight (x,y) Nothing      b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
+isAttackedByKnight (x,y) (Just White) b = 
+    getTile (x - 1, y - 2) b == Just (Knight Black) ||
+    getTile (x - 1, y + 2) b == Just (Knight Black) ||
+    getTile (x + 1, y - 2) b == Just (Knight Black) ||
+    getTile (x + 1, y + 2) b == Just (Knight Black) ||
+    getTile (x - 2, y - 1) b == Just (Knight Black) ||
+    getTile (x - 2, y + 1) b == Just (Knight Black) ||
+    getTile (x + 2, y - 1) b == Just (Knight Black) ||
+    getTile (x + 2, y + 1) b == Just (Knight Black)
+isAttackedByKnight (x,y) (Just Black) b = 
+    getTile (x - 1, y - 2) b == Just (Knight White) ||
+    getTile (x - 1, y + 2) b == Just (Knight White) ||
+    getTile (x + 1, y - 2) b == Just (Knight White) ||
+    getTile (x + 1, y + 2) b == Just (Knight White) ||
+    getTile (x - 2, y - 1) b == Just (Knight White) ||
+    getTile (x - 2, y + 1) b == Just (Knight White) ||
+    getTile (x + 2, y - 1) b == Just (Knight White) ||
+    getTile (x + 2, y + 1) b == Just (Knight White)
+
 getTeam :: Tile -> Maybe Team
 getTeam Empty          = Nothing
 getTeam (Pawn White)   = Just White
