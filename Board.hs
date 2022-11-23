@@ -96,6 +96,7 @@ canMovePawn (x1, y1) (x2, y2) c b =
     case c of
         Black -> 
             case getTile (x2, y2) b of
+                Nothing -> False
                 Just Empty -> 
                     x2 - x1 == 1 || (x1 == 1 && x2 == 3) 
                 Just x     -> 
@@ -104,6 +105,7 @@ canMovePawn (x1, y1) (x2, y2) c b =
                         Just White -> x2 - x1 == 1 && abs (y1 - y2) == 1
         White -> 
             case getTile (x2, y2) b of
+                Nothing -> False
                 Just Empty -> 
                     x1 - x2 == 1 || (x1 == 6 &&  x2 == 4) 
                 Just x     -> 
@@ -121,20 +123,24 @@ canMoveRook' (x1,y1) (x2,y2) b
         if (y1 < y2)
             then
                 case getTile (x1, y1 + 1) b of 
+                    Nothing -> False
                     Just Empty -> canMoveRook' (x1, y1 + 1) (x2, y2) b
                     Just x     -> (y1 + 1) == y2 
             else
                 case getTile (x1, y1 - 1) b of 
+                    Nothing -> False
                     Just Empty -> canMoveRook' (x1, y1 - 1) (x2, y2) b
                     Just x     -> (y1 - 1) == y2
     |(y1 == y2) = 
         if (x1 < x2)
             then
                 case getTile (x1 + 1, y1) b of 
+                    Nothing -> False
                     Just Empty -> canMoveRook' (x1 + 1, y1) (x2, y2) b
                     Just x     -> (x1 + 1) == x2
             else
                 case getTile (x1 - 1, y2) b of 
+                    Nothing -> False
                     Just Empty -> canMoveRook' (x1 - 1,y1) (x2, y2) b
                     Just x     -> (x1 - 1) == x2  
     |otherwise = False
@@ -152,20 +158,24 @@ canMoveBishop' (x1,y1) (x2,y2) b
                 if (x1 < x2)
                     then
                         case getTile (x1 + 1, y1 + 1) b of 
+                            Nothing -> False
                             Just Empty -> canMoveBishop' (x1 + 1, y1 + 1) (x2, y2) b
                             Just x     -> (x1 + 1, y1 + 1) == (x2, y2) 
                     else
                         case getTile (x1 - 1, y1 + 1) b of 
+                            Nothing -> False
                             Just Empty -> canMoveBishop' (x1 - 1, y1 + 1) (x2, y2) b
                             Just x     -> (x1 - 1, y1 + 1) == (x2, y2)
             else
                 if (x1 < x2)
                     then
                         case getTile (x1 + 1, y1 - 1) b of 
+                            Nothing -> False
                             Just Empty -> canMoveBishop' (x1 + 1, y1 - 1) (x2, y2) b
                             Just x     -> (x1 + 1, y1 - 1) == (x2, y2) 
                     else
                         case getTile (x1 - 1, y1 - 1) b of 
+                            Nothing -> False
                             Just Empty -> canMoveBishop' (x1 - 1, y1 - 1) (x2, y2) b
                             Just x     -> (x1 - 1, y1 - 1) == (x2, y2)
 
@@ -190,38 +200,6 @@ getTeam (Knight White) = Just White
 getTeam (Queen White)  = Just White
 getTeam (King White)   = Just White
 getTeam _              = Just Black
-
--- isAttacked :: (Int, Int) -> Board -> Bool
--- isAttacked (x,y) b =  -- isAttackedByPawn (x,y) mt b 
---                 --    || isAttackedByRook (x,y) mt b 
---                     isAttackedByKnight (x,y) mt b
---                 --    || isAttackedByBishop (x,y) mt b
---                 --    || isAttackedByQueen (x,y) mt b
---                 --    || isAttackedByKing (x,y) mt b
---                 where mt = getTeam (getTile (x,y) b)
-
--- isAttackedByKnight :: (Int, Int) -> Maybe Team -> Board -> Bool
--- isAttackedByKnight (x,y) mt b = 
---     case mt of
---         Nothing -> False -- Probably theres no need for it
---         Just White -> 
---             getTile (x - 1, y - 2) b == Knight Black ||
---             getTile (x - 1, y + 2) b == Knight Black ||
---             getTile (x + 1, y - 2) b == Knight Black ||
---             getTile (x + 1, y + 2) b == Knight Black ||
---             getTile (x - 2, y - 1) b == Knight Black ||
---             getTile (x - 2, y + 1) b == Knight Black ||
---             getTile (x + 2, y - 1) b == Knight Black ||
---             getTile (x + 2, y + 1) b == Knight Black
---         Just Black -> 
---             getTile (x - 1, y - 2) b == Knight White ||
---             getTile (x - 1, y + 2) b == Knight White ||
---             getTile (x + 1, y - 2) b == Knight White ||
---             getTile (x + 1, y + 2) b == Knight White ||
---             getTile (x - 2, y - 1) b == Knight White ||
---             getTile (x - 2, y + 1) b == Knight White ||
---             getTile (x + 2, y - 1) b == Knight White ||
---             getTile (x + 2, y + 1) b == Knight White
 
 
 testRow1 = [Rook Black, Knight Black, Bishop Black, Queen Black, King Black, Bishop Black, Knight Black, Rook Black]
