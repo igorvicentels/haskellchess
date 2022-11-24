@@ -3,6 +3,7 @@ module Board where
 import Data.Maybe
 
 --  todo: change Tile type
+
 data Team = Black
            | White
            deriving(Eq)
@@ -16,6 +17,9 @@ data Tile = Pawn Team
           | Empty
           deriving(Eq)
     
+-- data Game = Game{board :: Board, wKing :: Bool, bKing :: Bool, rwRook :: Bool, lwRook :: Bool, rbRook :: Bool, lbRook :: Bool}
+        
+
 instance Show Tile where
     show (Pawn   Black) = "p"
     show (Rook   Black) = "r"
@@ -71,11 +75,26 @@ movePiece (x1, y1) (x2, y2) b =
             let t = getTile (x1, y1) b in
                 case t of
                     Nothing -> b
+                    Just (King c) ->
+                        if abs(y1 - y2) == 2
+                            then
+                                movePiecesinCastle (x1, y1) (x2, y2) c  b
+                            else
+                                setTile (x1, y1) Empty (setTile (x2, y2) (King c) b)
+
                     Just t' -> setTile (x1, y1) Empty (setTile (x2, y2) t' b)
         else 
             b
 
--- TODO: Check if tile 2 is inside the board
+--Auxiliar Function
+movePiecesinCastle :: (Int, Int) -> (Int, Int) -> Team -> Board -> Board
+movePiecesinCastle (x1, y1) (x2, y2) c b
+    |y2 == 2 = setTile (x1, 0) Empty (setTile (x2, 3) (Rook c) moveKing)
+    |y2 == 6 = setTile (x1, 7) Empty (setTile (x2, 5) (Rook c) moveKing)
+    |otherwise = b -- "unnecessary"
+    where moveKing = setTile (x1, y1) Empty (setTile (x2, y2) (King c) b)
+
+    -- TODO: Check if tile 2 is inside the board
 canMove :: (Int, Int) -> (Int, Int) -> Board -> Bool
 canMove (x1, y1) (x2, y2) b
     | (x1 == x2) && (y1 == y2)                 = False
@@ -89,7 +108,7 @@ canMove (x1, y1) (x2, y2) b
             Just (Knight c) -> canMoveKnight (x1, y1) (x2, y2) c b
             Just (Bishop c) -> canMoveBishop (x1, y1) (x2, y2) c b
             Just (Queen  c) -> canMoveQueen (x1, y1) (x2, y2) c b
-            Just (King   c) -> canMoveKing (x1, y1) (x2, y2) c b
+            Just (King   c) -> canMoveKing (x1, y1) (x2, y2) c b || canMakeCastle (x1, y1) (x2, y2) False False c b
     where team1 = fmap getTeam (getTile (x1, y1) b)
           team2 = fmap getTeam (getTile (x2, y2) b)
 
@@ -259,6 +278,33 @@ isAttackedByKnight (x,y) (Just Black) b =
     getTile (x + 2, y - 1) b == Just (Knight White) ||
     getTile (x + 2, y + 1) b == Just (Knight White)
 
+
+canMakeCastle :: (Int, Int) -> (Int, Int) -> Bool -> Bool -> Team -> Board -> Bool
+canMakeCastle (x1, y1) (x2 ,y2) km rm c b = not(km || rm) && (x1 == x2) && (x1 == 7 || x1 == 0) && canMakeCastle' (x1, y1) (x2 ,y2) c b 
+--TODO: check the rule of Castle when the king is already in check 
+--TODO: review this function when the check verify function was made
+canMakeCastle' :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
+canMakeCastle' (x1, y1) (x2, y2) c b
+    |(y1 == 4) = 
+        if y2 == 6
+            then
+                isEmpty (x2, 5) b && isEmpty (x2, 6) b && (canMoveKing (x1, 4) (x2, 5) c b) && (canMoveKing (x2, 5) (x2, 6) c (movePiece (x1, 4) (x2, 5) b))
+            else
+                if y2 == 2
+                    then
+                        isEmpty (x2, 3) b && isEmpty (x2, 2) b && isEmpty (x2, 1) b && (canMoveKing (x1, 4) (x2, 3) c b) && (canMoveKing (x2, 3) (x2, 2) c (movePiece (x1, 4) (x2, 3) b)) 
+                    else
+                        False
+    |otherwise = False
+    where isEmpty(x, y) b = getTile (x, y) b == Just Empty
+
+isCastle :: (Int, Int) -> (Int, Int) -> Board -> Bool
+isCastle (x1, y1) (x2, y2) b = 
+    case (getTile (x1, y1) b) of
+        Just (King c) -> abs(y1 - y2) == 2
+        _             -> False
+
+ 
 getTeam :: Tile -> Maybe Team
 getTeam Empty          = Nothing
 getTeam (Pawn White)   = Just White
@@ -332,3 +378,14 @@ k9  = movePiece (5 ,4) (6, 5) k4 -- mov Wking para tile ocupada por mesmo time
 k10  = movePiece (6, 3) (4, 3) k4 -- mov Wpawn cima
 k11  = movePiece (5 ,4) (6, 3) k10 -- mov Wking baixo esq
 k12  = movePiece (6, 3) (7, 4) k11 -- mov Wking baixo dir
+
+c0 = movePiece (6, 2) (4, 2) testBoard --mov wpawn
+c1 = movePiece (7, 1) (5, 2) c0        --mov wknight
+c2 = movePiece (6, 1) (4, 1) c1        --mov wpawn
+c3 = movePiece (7, 2) (5, 0) c2        --mov wbishop
+c4 = movePiece (7, 3) (6, 2) c3        --mov wqueen
+c5 = movePiece (6, 6) (4, 6) c4        --mov wpawn
+c6 = movePiece (7, 6) (5, 5) c5        --mov wknight
+c7 = movePiece (7, 5) (5, 7) c6        --mov wbishop
+c8 = movePiece (7, 4) (7, 6) c7        --castle dir 
+c9 = movePiece (7, 4) (7, 2) c7        --castle esq
