@@ -38,7 +38,7 @@ type Board = [[Tile]]
 -- TODO: verify number of rows and columns
 
 data Game = Game { board :: Board
-                 , team :: Team
+                 , turn :: Int
                  , castle :: Castle
                  }
         deriving ( Show )
@@ -73,23 +73,25 @@ setTile' :: Int -> Tile -> [Tile] -> [Tile]
 setTile' 0 t (y:ys) = t : ys
 setTile' x t (y:ys) = y : setTile' (x-1) t ys
 
-movePiece :: Coord -> Coord -> Board -> Board
-movePiece (x1, y1) (x2, y2) b = 
-    if canMove (x1, y1) (x2, y2) b 
+movePiece :: Coord -> Coord -> Game -> Game
+movePiece (x1, y1) (x2, y2) game = 
+    if canMove (x1, y1) (x2, y2) game
         then
-            let t = getTile (x1, y1) b in
-                case t of
-                    Nothing -> b
-                    Just (King c) ->
-                        if abs(y1 - y2) == 2
-                            then
-                                movePiecesinCastle (x1, y1) (x2, y2) c  b
-                            else
-                                setTile (x1, y1) Empty (setTile (x2, y2) (King c) b)
+            case t of
+                Nothing -> game
+                Just (King c) ->
+                    if abs(y1 - y2) == 2
+                        then
+                            game { board = movePiecesinCastle (x1, y1) (x2, y2) c b }
+                        else
+                            game { board = setTile (x1, y1) Empty (setTile (x2, y2) (King c) b) }
 
-                    Just t' -> setTile (x1, y1) Empty (setTile (x2, y2) t' b)
+                Just t' -> game { board = setTile (x1, y1) Empty (setTile (x2, y2) t' b) }
         else 
-            b
+            game
+    where t = getTile (x1, y1) b 
+          b = board game
+
 
 --Auxiliar Function
 movePiecesinCastle :: Coord -> Coord -> Team -> Board -> Board
@@ -100,8 +102,8 @@ movePiecesinCastle (x1, y1) (x2, y2) c b
     where moveKing = setTile (x1, y1) Empty (setTile (x2, y2) (King c) b)
 
     -- TODO: Check if tile 2 is inside the board
-canMove :: Coord -> Coord -> Board -> Bool
-canMove (x1, y1) (x2, y2) b
+canMove :: Coord -> Coord -> Game -> Bool
+canMove (x1, y1) (x2, y2) game
     | (x1 == x2) && (y1 == y2) = False
     | team1 == team2           = False
     | otherwise = 
@@ -113,9 +115,10 @@ canMove (x1, y1) (x2, y2) b
             Just (Knight c) -> canMoveKnight (x1, y1) (x2, y2) c b
             Just (Bishop c) -> canMoveBishop (x1, y1) (x2, y2) c b
             Just (Queen  c) -> canMoveQueen (x1, y1) (x2, y2) c b
-            Just (King   c) -> canMoveKing (x1, y1) (x2, y2) c b || canMakeCastle (x1, y1) (x2, y2) (True, True, True, True) c b
+            Just (King   c) -> canMoveKing (x1, y1) (x2, y2) c b || canMakeCastle (x1, y1) (x2, y2) c game
     where team1 = fmap getTeam (getTile (x1, y1) b)
           team2 = fmap getTeam (getTile (x2, y2) b)
+          b = board game
 
 canMovePawn :: Coord -> Coord -> Team -> Board -> Bool
 canMovePawn (x1, y1) (x2, y2) c b =
@@ -283,22 +286,24 @@ isAttackedByKnight (x,y) (Just Black) b =
     getTile (x + 2, y + 1) b == Just (Knight White)
 
 
-canMakeCastle :: Coord -> Coord -> Castle -> Team -> Board -> Bool
-canMakeCastle (x1, y1) (x2, y2) (m1,m2,m3,m4) c b 
+canMakeCastle :: Coord -> Coord -> Team -> Game -> Bool
+canMakeCastle (x1, y1) (x2, y2) c game
     | x1 /= x2 || (x1 /= 0 && x1 /= 7) = False
-    | y1 == 4 && y2 == 2 && x1 == 0    = m1 && canMakeCastle' (x1, y1) (x2, y2) c b 
-    | y1 == 4 && y2 == 6 && x1 == 0    = m2 && canMakeCastle' (x1, y1) (x2, y2) c b 
-    | y1 == 4 && y2 == 2 && x1 == 7    = m3 && canMakeCastle' (x1, y1) (x2, y2) c b 
-    | y1 == 4 && y2 == 6 && x1 == 7    = m4 && canMakeCastle' (x1, y1) (x2, y2) c b 
+    | y1 == 4 && y2 == 2 && x1 == 0    = m1 && canMakeCastle' (x1, y1) (x2, y2) c game 
+    | y1 == 4 && y2 == 6 && x1 == 0    = m2 && canMakeCastle' (x1, y1) (x2, y2) c game 
+    | y1 == 4 && y2 == 2 && x1 == 7    = m3 && canMakeCastle' (x1, y1) (x2, y2) c game 
+    | y1 == 4 && y2 == 6 && x1 == 7    = m4 && canMakeCastle' (x1, y1) (x2, y2) c game 
     | otherwise                        = False
+    where (m1,m2,m3,m4) = castle game
 
 --TODO: check the rule of Castle when the king is already in check 
-canMakeCastle' :: Coord -> Coord -> Team -> Board -> Bool
-canMakeCastle' (x1, y1) (x2, y2) c b
-    | y1 == 4 && y2 == 6 = isEmpty (x2, 5) b && isEmpty (x2, 6) b && (canMove (x1, 4) (x2, 5) b) && (canMove (x2, 5) (x2, 6) (movePiece (x1, 4) (x2, 5) b))
-    | y1 == 4 && y2 == 2 = isEmpty (x2, 3) b && isEmpty (x2, 2) b && isEmpty (x2, 1) b && (canMove (x1, 4) (x2, 3) b) && (canMove (x2, 3) (x2, 2) (movePiece (x1, 4) (x2, 3) b)) 
+canMakeCastle' :: Coord -> Coord -> Team -> Game -> Bool
+canMakeCastle' (x1, y1) (x2, y2) c game
+    | y1 == 4 && y2 == 6 = isEmpty (x2, 5) b && isEmpty (x2, 6) b && (canMove (x1, 4) (x2, 5) game) && (canMove (x2, 5) (x2, 6) (movePiece (x1, 4) (x2, 5) game))
+    | y1 == 4 && y2 == 2 = isEmpty (x2, 3) b && isEmpty (x2, 2) b && isEmpty (x2, 1) b && (canMove (x1, 4) (x2, 3) game) && (canMove (x2, 3) (x2, 2) (movePiece (x1, 4) (x2, 3) game)) 
     | otherwise = False
-    where isEmpty(x, y) b = getTile (x, y) b == Just Empty
+    where b = board game 
+          isEmpty(x, y) b = getTile (x, y) b == Just Empty
 
 
  
@@ -331,7 +336,9 @@ testBoard = [ testRow1
             , testRow7
             , testRow8 ] 
 
-b1  = movePiece (6, 1) (4, 1) testBoard -- Wpawn avança duas casas 
+g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True)}
+
+b1  = movePiece (6, 1) (4, 1) g1 -- Wpawn avança duas casas 
 b2  = movePiece (7, 2) (5, 0) b1 -- Wbishop avança diag sup esq
 b3  = movePiece (5, 0) (4, 1) b2 -- movimento invalido do Wbishop por peça do mesmo time
 b4  = movePiece (4, 1) (3, 1) b3 -- wpawn avança uma casa
@@ -344,7 +351,7 @@ b10 = movePiece (4, 1) (6, 3) b9 -- Bbishop captura (para diag inf dir) Wpawn
 b11 = movePiece (6, 3) (4, 3) b10 -- mov inválido do Bbishop (vertical)
 b12 = movePiece (5, 6) (5, 0) b11 -- mov inválido do Wbishop (horizontal)
 
-r1  = movePiece (6, 0) (4, 0) testBoard  
+r1  = movePiece (6, 0) (4, 0) g1  
 r2  = movePiece (7, 0) (5, 0) r1 --movimento Wrook vertical cima
 r3  = movePiece (5, 0) (5, 7) r2 --movimento Wrook horizontal
 r4  = movePiece (5, 7) (1, 7) r3 --Wrook captura (para cima) Bpawn
@@ -354,7 +361,7 @@ r7  = movePiece (1, 6) (4, 6) r6 --movimento Wrook vertical baixo
 r8  = movePiece (4, 6) (4, 1) r7 --movimento Wrook horizontal esq
 r9  = movePiece (4, 1) (0, 1) r8 --mov invalido Wrook por sentido de mov ocupado
 
-n1  = movePiece (7, 1) (5, 0) testBoard -- mov Wknight sup esq
+n1  = movePiece (7, 1) (5, 0) g1 -- mov Wknight sup esq
 n2  = movePiece (5, 0) (3, 1) n1 --mov Wknight sup dir
 n3  = movePiece (3, 1) (1, 2) n2 --Wknight captura (para direção sup dir) Bpawn
 n4  = movePiece (1, 2) (2, 3) n3 -- movimento invalido Wknight
@@ -363,7 +370,7 @@ n6  = movePiece (3, 3) (5, 2) n5 -- movimento Wknight inf esq
 n7  = movePiece (5, 2) (6, 4) n6 -- movimento invalido Wknight por tile ocupado pela mesma cor 
 n8  = movePiece (5, 2) (4, 4) n7 -- movimento Wknight dir sup 
 
-k1  = movePiece (6, 4) (4, 4) testBoard -- mov Wpawn cima
+k1  = movePiece (6, 4) (4, 4) g1 -- mov Wpawn cima
 k2  = movePiece (7, 4) (5, 4) k1 --mov invalido (pular uma casa) Wking sup 
 k3  = movePiece (7 ,4) (6, 4) k2 --mov Wking cima
 k4  = movePiece (6 ,4) (5, 4) k3 -- mov Wking cima
@@ -376,7 +383,7 @@ k10  = movePiece (6, 3) (4, 3) k4 -- mov Wpawn cima
 k11  = movePiece (5 ,4) (6, 3) k10 -- mov Wking baixo esq
 k12  = movePiece (6, 3) (7, 4) k11 -- mov Wking baixo dir
 
-c0 = movePiece (6, 2) (4, 2) testBoard --mov wpawn
+c0 = movePiece (6, 2) (4, 2) g1 --mov wpawn
 c1 = movePiece (7, 1) (5, 2) c0        --mov wknight
 c2 = movePiece (6, 1) (4, 1) c1        --mov wpawn
 c3 = movePiece (7, 2) (5, 0) c2        --mov wbishop
