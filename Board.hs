@@ -93,6 +93,24 @@ movePiece (x1, y1) (x2, y2) game =
                                  , movesList = m : m'
                                  , turn = turn' + 1 }
 
+                Just (Pawn White) ->
+                    if (x1 == 3 && abs (y1 - y2) == 1 && getTile (x2,y2) b == Just Empty) 
+                        then game { board = moveEnPassant (x1, y1) (x2, y2) White b
+                                  , movesList = m : m'
+                                  , turn = turn' + 1 }
+                        else game { board = setTile (x1, y1) Empty (setTile (x2, y2) (Pawn White) b)
+                                  , movesList = m : m'
+                                  , turn = turn' + 1 }
+
+                Just (Pawn Black) ->
+                    if (x1 == 4 && abs (y1 - y2) == 1 && getTile (x2,y2) b == Just Empty) 
+                        then game { board = moveEnPassant (x1, y1) (x2, y2) Black b
+                                  , movesList = m : m'
+                                  , turn = turn' + 1 }
+                        else game { board = setTile (x1, y1) Empty (setTile (x2, y2) (Pawn Black) b)
+                                  , movesList = m : m'
+                                  , turn = turn' + 1 }
+
                 Just t' -> game { board = setTile (x1, y1) Empty (setTile (x2, y2) t' b)
                                 , movesList = m : m'
                                 , turn = turn' + 1 }
@@ -113,6 +131,9 @@ movePiecesinCastle (x1, y1) (x2, y2) c b
     | otherwise = b -- "unnecessary"
     where moveKing = setTile (x1, y1) Empty (setTile (x2, y2) (King c) b)
 
+moveEnPassant :: Coord -> Coord -> Team -> Board -> Board
+moveEnPassant (x1, y1) (x2, y2) c b = setTile (x1,y1) Empty (setTile (x1, y2) Empty (setTile (x2,y2) (Pawn c) b))
+
     -- TODO: Check if tile 2 is inside the board
 canMove :: Coord -> Coord -> Game -> Bool
 canMove (x1, y1) (x2, y2) game
@@ -123,7 +144,7 @@ canMove (x1, y1) (x2, y2) game
         case (getTile (x1, y1) b) of
             Nothing         -> False
             Just (Empty)    -> False
-            Just (Pawn   c) -> canMovePawn (x1, y1) (x2, y2) c b
+            Just (Pawn   c) -> canMovePawn (x1, y1) (x2, y2) c b || enPassant (x1, y1) (x2,y2) c game
             Just (Rook   c) -> canMoveRook (x1, y1) (x2, y2) c b
             Just (Knight c) -> canMoveKnight (x1, y1) (x2, y2) c b
             Just (Bishop c) -> canMoveBishop (x1, y1) (x2, y2) c b
@@ -142,7 +163,7 @@ canMovePawn (x1, y1) (x2, y2) c b =
             case getTile (x2, y2) b of
                 Nothing -> False
                 Just Empty -> 
-                    x2 - x1 == 1 || (x1 == 1 && x2 == 3) 
+                    (x2 - x1 == 1 || (x1 == 1 && x2 == 3)) && y1 == y2
                 Just x     -> 
                     case getTeam x of
                         Just Black -> False
@@ -151,7 +172,7 @@ canMovePawn (x1, y1) (x2, y2) c b =
             case getTile (x2, y2) b of
                 Nothing -> False
                 Just Empty -> 
-                    x1 - x2 == 1 || (x1 == 6 &&  x2 == 4) 
+                    (x1 - x2 == 1 || (x1 == 6 &&  x2 == 4)) && y1 == y2 
                 Just x     -> 
                     case getTeam x of
                         Just White -> False
@@ -320,8 +341,17 @@ canMakeCastle' (x1, y1) (x2, y2) c game
     where b = board game 
           isEmpty(x, y) b = getTile (x, y) b == Just Empty
 
+enPassant :: Coord -> Coord -> Team -> Game -> Bool
+enPassant (x1,y1) (x2,y2) White game =
+    x1 == 3 && 
+    getTile (x1, y2) (board game) == Just (Pawn Black) &&
+    head (movesList game) == ((1, y2), (3, y2))
+enPassant (x1,y1) (x2,y2) Black game = 
+    x1 == 4 && 
+    getTile (x1, y2) (board game) == Just (Pawn White) &&
+    head (movesList game) == ((6, y2), (4, y2))
 
- 
+
 getTeam :: Tile -> Maybe Team
 getTeam Empty          = Nothing
 getTeam (Pawn White)   = Just White
@@ -408,3 +438,13 @@ c6 = movePiece (7, 6) (5, 5) c5        --mov wknight
 c7 = movePiece (7, 5) (5, 7) c6        --mov wbishop
 c8 = movePiece (7, 4) (7, 6) c7        --castle dir 
 c9 = movePiece (7, 4) (7, 2) c7        --castle esq
+
+e1 = movePiece (6, 1) (4, 1) g1  
+e2 = movePiece (1, 2) (3, 2) e1
+e3 = movePiece (4, 1) (3, 1) e2
+e4 = movePiece (1, 0) (3, 0) e3
+e5 = movePiece (3, 1) (2, 2) e4  -- mov invalido (peão a ser capturado não havia se movido na jogada anterior)
+e6 = movePiece (3, 1) (2, 0) e4  -- en passant certo
+e7 = movePiece (3, 2) (4, 2) e6  
+e8 = movePiece (6, 3) (4, 3) e7  
+e9 = movePiece (4, 2) (5, 3) e8  -- en passant certo
