@@ -10,6 +10,8 @@ type Coord = (Int, Int)
 
 type Castle = (Bool, Bool, Bool, Bool) 
 
+type Move = (Coord, Coord)
+
 data Tile = Pawn Team
           | Rook Team
           | Knight Team
@@ -40,6 +42,7 @@ type Board = [[Tile]]
 data Game = Game { board :: Board
                  , turn :: Int
                  , castle :: Castle
+                 , movesList :: [Move]
                  }
         deriving ( Show )
 
@@ -82,15 +85,24 @@ movePiece (x1, y1) (x2, y2) game =
                 Just (King c) ->
                     if abs(y1 - y2) == 2
                         then
-                            game { board = movePiecesinCastle (x1, y1) (x2, y2) c b }
+                            game { board = movePiecesinCastle (x1, y1) (x2, y2) c b
+                                 , movesList = m : m'
+                                 , turn = turn' + 1 }
                         else
-                            game { board = setTile (x1, y1) Empty (setTile (x2, y2) (King c) b) }
+                            game { board = setTile (x1, y1) Empty (setTile (x2, y2) (King c) b)
+                                 , movesList = m : m'
+                                 , turn = turn' + 1 }
 
-                Just t' -> game { board = setTile (x1, y1) Empty (setTile (x2, y2) t' b) }
+                Just t' -> game { board = setTile (x1, y1) Empty (setTile (x2, y2) t' b)
+                                , movesList = m : m'
+                                , turn = turn' + 1 }
         else 
             game
     where t = getTile (x1, y1) b 
           b = board game
+          m = ((x1,y1), (x2,y2))
+          m' = movesList game
+          turn' = turn game
 
 
 --Auxiliar Function
@@ -106,6 +118,7 @@ canMove :: Coord -> Coord -> Game -> Bool
 canMove (x1, y1) (x2, y2) game
     | (x1 == x2) && (y1 == y2) = False
     | team1 == team2           = False
+    | not isPlayerTurn         = False
     | otherwise = 
         case (getTile (x1, y1) b) of
             Nothing         -> False
@@ -119,6 +132,8 @@ canMove (x1, y1) (x2, y2) game
     where team1 = fmap getTeam (getTile (x1, y1) b)
           team2 = fmap getTeam (getTile (x2, y2) b)
           b = board game
+          turn' = turn game
+          isPlayerTurn = (team1 == Just (Just White) && turn' `mod` 2 == 1) || (team1 == Just (Just Black) && turn' `mod` 2 == 0)
 
 canMovePawn :: Coord -> Coord -> Team -> Board -> Bool
 canMovePawn (x1, y1) (x2, y2) c b =
@@ -336,7 +351,7 @@ testBoard = [ testRow1
             , testRow7
             , testRow8 ] 
 
-g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True)}
+g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = []}
 
 b1  = movePiece (6, 1) (4, 1) g1 -- Wpawn avança duas casas 
 b2  = movePiece (7, 2) (5, 0) b1 -- Wbishop avança diag sup esq
