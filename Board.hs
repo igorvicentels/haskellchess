@@ -2,11 +2,13 @@ module Board where
 
 import Data.Maybe
 
---  todo: change Tile type
+type Coord = (Int, Int)
+
+type Castle = (Bool, Bool, Bool, Bool)        
 
 data Team = Black
-           | White
-           deriving(Eq)
+          | White
+    deriving( Show, Eq )
 
 data Tile = Pawn Team
           | Rook Team
@@ -16,9 +18,6 @@ data Tile = Pawn Team
           | King Team
           | Empty
           deriving(Eq)
-    
--- data Game = Game{board :: Board, wKing :: Bool, bKing :: Bool, rwRook :: Bool, lwRook :: Bool, rbRook :: Bool, lbRook :: Bool}
-        
 
 instance Show Tile where
     show (Pawn   Black) = "p"
@@ -35,8 +34,8 @@ instance Show Tile where
     show (King   White) = "K"
     show Empty          = " "
 
-type Board = [[Tile]]
 -- TODO: verify number of rows and columns
+type Board = [[Tile]]
 
 showRow :: [Tile] -> IO ()
 showRow []     = return () 
@@ -55,12 +54,12 @@ showBoard (x:xs) = do showRow x
                       showLine 
                       showBoard xs
 
-getTile :: (Int, Int) -> Board -> Maybe Tile
+getTile :: Coord -> Board -> Maybe Tile
 getTile (x, y) b
     | x < 0 || y < 0 || x > 7 || y > 7 = Nothing
     | otherwise                        = Just $ b !! x !! y
 
-setTile :: (Int, Int) -> Tile -> Board -> Board
+setTile :: Coord -> Tile -> Board -> Board
 setTile (0, y) t (r:rs) = setTile' y t r : rs
 setTile (x, y) t (r:rs) = r : setTile ((x - 1), y) t rs 
 
@@ -68,7 +67,7 @@ setTile' :: Int -> Tile -> [Tile] -> [Tile]
 setTile' 0 t (y:ys) = t : ys
 setTile' x t (y:ys) = y : setTile' (x-1) t ys
 
-movePiece :: (Int, Int) -> (Int, Int) -> Board -> Board
+movePiece :: Coord -> Coord -> Board -> Board
 movePiece (x1, y1) (x2, y2) b = 
     if canMove (x1, y1) (x2, y2) b 
         then
@@ -87,7 +86,7 @@ movePiece (x1, y1) (x2, y2) b =
             b
 
 --Auxiliar Function
-movePiecesinCastle :: (Int, Int) -> (Int, Int) -> Team -> Board -> Board
+movePiecesinCastle :: Coord -> Coord -> Team -> Board -> Board
 movePiecesinCastle (x1, y1) (x2, y2) c b
     |y2 == 2 = setTile (x1, 0) Empty (setTile (x2, 3) (Rook c) moveKing)
     |y2 == 6 = setTile (x1, 7) Empty (setTile (x2, 5) (Rook c) moveKing)
@@ -95,7 +94,7 @@ movePiecesinCastle (x1, y1) (x2, y2) c b
     where moveKing = setTile (x1, y1) Empty (setTile (x2, y2) (King c) b)
 
     -- TODO: Check if tile 2 is inside the board
-canMove :: (Int, Int) -> (Int, Int) -> Board -> Bool
+canMove :: Coord -> Coord -> Board -> Bool
 canMove (x1, y1) (x2, y2) b
     | (x1 == x2) && (y1 == y2)                 = False
     | team1 == team2 = False
@@ -112,7 +111,7 @@ canMove (x1, y1) (x2, y2) b
     where team1 = fmap getTeam (getTile (x1, y1) b)
           team2 = fmap getTeam (getTile (x2, y2) b)
 
-canMovePawn :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
+canMovePawn :: Coord -> Coord -> Team -> Board -> Bool
 canMovePawn (x1, y1) (x2, y2) c b =
     case c of
         Black -> 
@@ -134,7 +133,7 @@ canMovePawn (x1, y1) (x2, y2) c b =
                         Just White -> False
                         Just Black -> x1 - x2 == 1 && abs (y1 - y2) == 1
 
-canMoveRook :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
+canMoveRook :: Coord -> Coord -> Team -> Board -> Bool
 canMoveRook (x1,y1) (x2,y2) c b
     |(x1 == x2) && (y1 == y2) = True
     |(x1 == x2) = 
@@ -163,7 +162,7 @@ canMoveRook (x1,y1) (x2,y2) c b
                     Just x     -> (x1 - 1) == x2  
     |otherwise = False
 
-canMoveBishop :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
+canMoveBishop :: Coord -> Coord -> Team -> Board -> Bool
 canMoveBishop (x1,y1) (x2,y2) c b
     |(x1 == x2) && (y1 == y2) = True
     |abs(x1 - x2) /= abs(y1 - y2) = False
@@ -195,18 +194,18 @@ canMoveBishop (x1,y1) (x2,y2) c b
                             Just x     -> (x1 - 1, y1 - 1) == (x2, y2)
 
 
-canMoveQueen :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
+canMoveQueen :: Coord -> Coord -> Team -> Board -> Bool
 canMoveQueen (x1, y1) (x2, y2) c b = canMoveBishop (x1, y1) (x2, y2) c b || canMoveRook (x1, y1) (x2, y2) c b
 
-canMoveKnight :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
+canMoveKnight :: Coord -> Coord -> Team -> Board -> Bool
 canMoveKnight (x1, y1) (x2, y2) c b =
     ((abs (x1 - x2) == 1 && abs (y1 - y2) == 2) || (abs (x1 - x2) == 2 && abs (y1 - y2) == 1))
 
-canMoveKing :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
+canMoveKing :: Coord -> Coord -> Team -> Board -> Bool
 canMoveKing (x1, y1) (x2, y2) c b = 
     ((abs (x1 - x2) == 1 && (y1 == y2 || abs (y1 - y2) == 1)) || (abs (y1 - y2) == 1 && (x1 == x2 || abs (x1 - x2) == 1)))  
 
-isAttacked :: (Int, Int) -> Board -> Bool
+isAttacked :: Coord -> Board -> Bool
 isAttacked (x,y) b =  
     case getTile (x,y) b of
         Nothing -> False -- Check if the return type must be maybe bool
@@ -217,7 +216,7 @@ isAttacked (x,y) b =
             -- isAttackedByKing (x,y) mt b
             where mt = getTeam t
 
-isAttackedByPawn :: (Int, Int) -> Maybe Team -> Board -> Bool
+isAttackedByPawn :: Coord -> Maybe Team -> Board -> Bool
 isAttackedByPawn (x,y) Nothing      b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
 isAttackedByPawn (x,y) (Just White) b =
     getTile (x - 1, y - 1) b == Just (Pawn Black) ||
@@ -226,7 +225,7 @@ isAttackedByPawn (x,y) (Just Black) b =
     getTile (x + 1, y - 1) b == Just (Pawn White) ||
     getTile (x + 1, y + 1) b == Just (Pawn White)
 
-isAttackedLine :: (Int, Int) -> Maybe Team -> Board -> Bool
+isAttackedLine :: Coord -> Maybe Team -> Board -> Bool
 isAttackedLine (x,y) Nothing b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
 isAttackedLine (x,y) t       b = 
     isAttackedLine' (x,y) succ id   t b ||
@@ -239,7 +238,7 @@ isAttackedLine (x,y) t       b =
     isAttackedLine' (x,y) id   succ t b
 
 -- TODO: check t2 type
-isAttackedLine' :: (Int, Int) -> (Int -> Int) -> (Int -> Int) -> Maybe Team -> Board -> Bool
+isAttackedLine' :: Coord -> (Int -> Int) -> (Int -> Int) -> Maybe Team -> Board -> Bool
 isAttackedLine' (x,y) _ _ Nothing b = False  -- "unnecessary"
 isAttackedLine' (x,y) f g t1      b = 
     case fmap getTeam (getTile (f x, g y) b) of
@@ -257,7 +256,7 @@ isAttackedLine' (x,y) f g t1      b =
                         _                -> False
 
 
-isAttackedByKnight :: (Int, Int) -> Maybe Team -> Board -> Bool
+isAttackedByKnight :: Coord -> Maybe Team -> Board -> Bool
 isAttackedByKnight (x,y) Nothing      b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
 isAttackedByKnight (x,y) (Just White) b = 
     getTile (x - 1, y - 2) b == Just (Knight Black) ||
@@ -279,11 +278,11 @@ isAttackedByKnight (x,y) (Just Black) b =
     getTile (x + 2, y + 1) b == Just (Knight White)
 
 
-canMakeCastle :: (Int, Int) -> (Int, Int) -> Bool -> Bool -> Team -> Board -> Bool
+canMakeCastle :: Coord -> Coord -> Bool -> Bool -> Team -> Board -> Bool
 canMakeCastle (x1, y1) (x2 ,y2) km rm c b = not(km || rm) && (x1 == x2) && (x1 == 7 || x1 == 0) && canMakeCastle' (x1, y1) (x2 ,y2) c b 
 --TODO: check the rule of Castle when the king is already in check 
 --TODO: review this function when the check verify function was made
-canMakeCastle' :: (Int, Int) -> (Int, Int) -> Team -> Board -> Bool
+canMakeCastle' :: Coord -> Coord -> Team -> Board -> Bool
 canMakeCastle' (x1, y1) (x2, y2) c b
     |(y1 == 4) = 
         if y2 == 6
@@ -298,7 +297,7 @@ canMakeCastle' (x1, y1) (x2, y2) c b
     |otherwise = False
     where isEmpty(x, y) b = getTile (x, y) b == Just Empty
 
-isCastle :: (Int, Int) -> (Int, Int) -> Board -> Bool
+isCastle :: Coord -> Coord -> Board -> Bool
 isCastle (x1, y1) (x2, y2) b = 
     case (getTile (x1, y1) b) of
         Just (King c) -> abs(y1 - y2) == 2
