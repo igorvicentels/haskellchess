@@ -2,13 +2,13 @@ module Board where
 
 import Data.Maybe
 
-type Coord = (Int, Int)
-
-type Castle = (Bool, Bool, Bool, Bool)        
-
 data Team = Black
           | White
     deriving( Show, Eq )
+
+type Coord = (Int, Int)
+
+type Castle = (Bool, Bool, Bool, Bool) 
 
 data Tile = Pawn Team
           | Rook Team
@@ -34,8 +34,14 @@ instance Show Tile where
     show (King   White) = "K"
     show Empty          = " "
 
--- TODO: verify number of rows and columns
 type Board = [[Tile]]
+-- TODO: verify number of rows and columns
+
+data Game = Game { board :: Board
+                 , team :: Team
+                 , castle :: Castle
+                 }
+        deriving ( Show )
 
 showRow :: [Tile] -> IO ()
 showRow []     = return () 
