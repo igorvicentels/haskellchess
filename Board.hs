@@ -94,16 +94,16 @@ movePiece (x1, y1) (x2, y2) b =
 --Auxiliar Function
 movePiecesinCastle :: Coord -> Coord -> Team -> Board -> Board
 movePiecesinCastle (x1, y1) (x2, y2) c b
-    |y2 == 2 = setTile (x1, 0) Empty (setTile (x2, 3) (Rook c) moveKing)
-    |y2 == 6 = setTile (x1, 7) Empty (setTile (x2, 5) (Rook c) moveKing)
-    |otherwise = b -- "unnecessary"
+    | y2 == 2 = setTile (x1, 0) Empty (setTile (x2, 3) (Rook c) moveKing)
+    | y2 == 6 = setTile (x1, 7) Empty (setTile (x2, 5) (Rook c) moveKing)
+    | otherwise = b -- "unnecessary"
     where moveKing = setTile (x1, y1) Empty (setTile (x2, y2) (King c) b)
 
     -- TODO: Check if tile 2 is inside the board
 canMove :: Coord -> Coord -> Board -> Bool
 canMove (x1, y1) (x2, y2) b
-    | (x1 == x2) && (y1 == y2)                 = False
-    | team1 == team2 = False
+    | (x1 == x2) && (y1 == y2) = False
+    | team1 == team2           = False
     | otherwise = 
         case (getTile (x1, y1) b) of
             Nothing         -> False
@@ -113,7 +113,7 @@ canMove (x1, y1) (x2, y2) b
             Just (Knight c) -> canMoveKnight (x1, y1) (x2, y2) c b
             Just (Bishop c) -> canMoveBishop (x1, y1) (x2, y2) c b
             Just (Queen  c) -> canMoveQueen (x1, y1) (x2, y2) c b
-            Just (King   c) -> canMoveKing (x1, y1) (x2, y2) c b || canMakeCastle (x1, y1) (x2, y2) False False c b
+            Just (King   c) -> canMoveKing (x1, y1) (x2, y2) c b || canMakeCastle (x1, y1) (x2, y2) (True, True, True, True) c b
     where team1 = fmap getTeam (getTile (x1, y1) b)
           team2 = fmap getTeam (getTile (x2, y2) b)
 
@@ -141,8 +141,8 @@ canMovePawn (x1, y1) (x2, y2) c b =
 
 canMoveRook :: Coord -> Coord -> Team -> Board -> Bool
 canMoveRook (x1,y1) (x2,y2) c b
-    |(x1 == x2) && (y1 == y2) = True
-    |(x1 == x2) = 
+    | (x1 == x2) && (y1 == y2) = True
+    | (x1 == x2) = 
         if (y1 < y2)
             then
                 case getTile (x1, y1 + 1) b of 
@@ -154,7 +154,7 @@ canMoveRook (x1,y1) (x2,y2) c b
                     Nothing -> False
                     Just Empty -> canMoveRook (x1, y1 - 1) (x2, y2) c b
                     Just x     -> (y1 - 1) == y2
-    |(y1 == y2) = 
+    | (y1 == y2) = 
         if (x1 < x2)
             then
                 case getTile (x1 + 1, y1) b of 
@@ -166,13 +166,13 @@ canMoveRook (x1,y1) (x2,y2) c b
                     Nothing -> False
                     Just Empty -> canMoveRook (x1 - 1,y1) (x2, y2) c b
                     Just x     -> (x1 - 1) == x2  
-    |otherwise = False
+    | otherwise = False
 
 canMoveBishop :: Coord -> Coord -> Team -> Board -> Bool
 canMoveBishop (x1,y1) (x2,y2) c b
-    |(x1 == x2) && (y1 == y2) = True
-    |abs(x1 - x2) /= abs(y1 - y2) = False
-    |otherwise = 
+    | (x1 == x2) && (y1 == y2) = True
+    | abs(x1 - x2) /= abs(y1 - y2) = False
+    | otherwise = 
         if (y1 < y2) 
             then
                 if (x1 < x2)
@@ -208,8 +208,7 @@ canMoveKnight (x1, y1) (x2, y2) c b =
     ((abs (x1 - x2) == 1 && abs (y1 - y2) == 2) || (abs (x1 - x2) == 2 && abs (y1 - y2) == 1))
 
 canMoveKing :: Coord -> Coord -> Team -> Board -> Bool
-canMoveKing (x1, y1) (x2, y2) c b = 
-    ((abs (x1 - x2) == 1 && (y1 == y2 || abs (y1 - y2) == 1)) || (abs (y1 - y2) == 1 && (x1 == x2 || abs (x1 - x2) == 1)))  
+canMoveKing (x1, y1) (x2, y2) c b = abs (x1 - x2) <= 1 && abs (y1 - y2) <= 1
 
 isAttacked :: Coord -> Board -> Bool
 isAttacked (x,y) b =  
@@ -284,30 +283,23 @@ isAttackedByKnight (x,y) (Just Black) b =
     getTile (x + 2, y + 1) b == Just (Knight White)
 
 
-canMakeCastle :: Coord -> Coord -> Bool -> Bool -> Team -> Board -> Bool
-canMakeCastle (x1, y1) (x2 ,y2) km rm c b = not(km || rm) && (x1 == x2) && (x1 == 7 || x1 == 0) && canMakeCastle' (x1, y1) (x2 ,y2) c b 
+canMakeCastle :: Coord -> Coord -> Castle -> Team -> Board -> Bool
+canMakeCastle (x1, y1) (x2, y2) (m1,m2,m3,m4) c b 
+    | x1 /= x2 || (x1 /= 0 && x1 /= 7) = False
+    | y1 == 4 && y2 == 2 && x1 == 0    = m1 && canMakeCastle' (x1, y1) (x2, y2) c b 
+    | y1 == 4 && y2 == 6 && x1 == 0    = m2 && canMakeCastle' (x1, y1) (x2, y2) c b 
+    | y1 == 4 && y2 == 2 && x1 == 7    = m3 && canMakeCastle' (x1, y1) (x2, y2) c b 
+    | y1 == 4 && y2 == 6 && x1 == 7    = m4 && canMakeCastle' (x1, y1) (x2, y2) c b 
+    | otherwise                        = False
+
 --TODO: check the rule of Castle when the king is already in check 
---TODO: review this function when the check verify function was made
 canMakeCastle' :: Coord -> Coord -> Team -> Board -> Bool
 canMakeCastle' (x1, y1) (x2, y2) c b
-    |(y1 == 4) = 
-        if y2 == 6
-            then
-                isEmpty (x2, 5) b && isEmpty (x2, 6) b && (canMoveKing (x1, 4) (x2, 5) c b) && (canMoveKing (x2, 5) (x2, 6) c (movePiece (x1, 4) (x2, 5) b))
-            else
-                if y2 == 2
-                    then
-                        isEmpty (x2, 3) b && isEmpty (x2, 2) b && isEmpty (x2, 1) b && (canMoveKing (x1, 4) (x2, 3) c b) && (canMoveKing (x2, 3) (x2, 2) c (movePiece (x1, 4) (x2, 3) b)) 
-                    else
-                        False
-    |otherwise = False
+    | y1 == 4 && y2 == 6 = isEmpty (x2, 5) b && isEmpty (x2, 6) b && (canMove (x1, 4) (x2, 5) b) && (canMove (x2, 5) (x2, 6) (movePiece (x1, 4) (x2, 5) b))
+    | y1 == 4 && y2 == 2 = isEmpty (x2, 3) b && isEmpty (x2, 2) b && isEmpty (x2, 1) b && (canMove (x1, 4) (x2, 3) b) && (canMove (x2, 3) (x2, 2) (movePiece (x1, 4) (x2, 3) b)) 
+    | otherwise = False
     where isEmpty(x, y) b = getTile (x, y) b == Just Empty
 
-isCastle :: Coord -> Coord -> Board -> Bool
-isCastle (x1, y1) (x2, y2) b = 
-    case (getTile (x1, y1) b) of
-        Just (King c) -> abs(y1 - y2) == 2
-        _             -> False
 
  
 getTeam :: Tile -> Maybe Team
