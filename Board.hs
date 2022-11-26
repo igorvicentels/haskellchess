@@ -98,18 +98,29 @@ movePiece (file1, rank1) (file2, rank2) game =
                         then game { board = moveEnPassant (file1, rank1) (file2, rank2) White b
                                   , movesList = m : m'
                                   , turn = turn' + 1 }
-                        else game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn White) b)
-                                  , movesList = m : m'
-                                  , turn = turn' + 1 }
+                        else 
+                            if rank1 == 1 
+                                then
+                                    pawnPromotion (file1, rank1) (file2, rank2) (Queen White) game
+
+                                else
+                                    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn White) b)
+                                         , movesList = m : m'
+                                         , turn = turn' + 1 }
 
                 Just (Pawn Black) ->
                     if (rank1 == 4 && abs (file1 - file2) == 1 && getTile (file2,rank2) b == Just Empty) 
                         then game { board = moveEnPassant (file1, rank1) (file2, rank2) Black b
                                   , movesList = m : m'
                                   , turn = turn' + 1 }
-                        else game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn Black) b)
-                                  , movesList = m : m'
-                                  , turn = turn' + 1 }
+                        else
+                            if rank1 == 6 
+                                then
+                                    pawnPromotion (file1, rank1) (file2, rank2) (Queen Black) game
+                                else 
+                                    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn Black) b)
+                                          , movesList = m : m'
+                                          , turn = turn' + 1 }
 
                 Just t' -> game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) t' b)
                                 , movesList = m : m'
@@ -351,6 +362,12 @@ enPassant (file1, rank1) (file2, rank2) Black game =
     getTile (file2, rank1) (board game) == Just (Pawn White) &&
     head (movesList game) == ((file2, 6), (file2, 4))
 
+pawnPromotion :: Coord -> Coord -> Tile -> Game -> Game
+pawnPromotion (file1, rank1) (file2, rank2) t game = 
+    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) t (board game))
+         , movesList = ((file1, rank1), (file2,rank2)) : movesList game
+         , turn = (turn game) + 1 }
+
 
 getTeam :: Tile -> Maybe Team
 getTeam Empty          = Nothing
@@ -448,3 +465,9 @@ e6 = movePiece (1, 3) (0, 2) e4  -- en passant certo
 e7 = movePiece (2, 3) (2, 4) e6  
 e8 = movePiece (3, 6) (3, 4) e7  
 e9 = movePiece (2, 4) (3, 5) e8  -- en passant certo
+
+pp1 = movePiece (1, 0) (2, 2) e8
+pp2 = movePiece (0, 2) (0, 1) pp1
+pp3 = movePiece (0, 0) (1, 0) pp2
+pp4 = movePiece (0, 1) (0, 0) pp3 -- promoção de peão avançando uma casa
+pp5 = movePiece (0, 1) (1, 0) pp3 -- promoção de peão capturando peça
