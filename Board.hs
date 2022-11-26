@@ -79,77 +79,62 @@ setTile' 0 t (y:ys) = t : ys
 setTile' x t (y:ys) = y : setTile' (x-1) t ys
 
 movePiece :: Coord -> Coord -> Game -> Game
-movePiece (file1, rank1) (file2, rank2) game = 
-    if canMove (file1, rank1) (file2, rank2) game
-        then
-            case t of
-                Nothing -> game
-                Just (King c) ->
-                    if abs(file1 - file2) == 2
+movePiece (file1, rank1) (file2, rank2) game  
+    | canMove (file1, rank1) (file2, rank2) game = newgame { movesList = m : m'
+                                                           , turn = turn' + 1}
+    | otherwise = game
+    where newgame = movePiece' (file1, rank1) (file2, rank2) game
+          m = ((file1,rank1), (file2, rank2))
+          m' = movesList newgame
+          turn' = turn newgame
+
+movePiece' :: Coord -> Coord -> Game -> Game
+movePiece' (file1, rank1) (file2, rank2) game = 
+    case t of
+        Nothing -> game
+        Just (King c) ->
+            if abs(file1 - file2) == 2
+                then
+                    if c == Black
                         then
-                            if c == Black
-                                then
-                                    game { board = movePiecesinCastle (file1, rank1) (file2, rank2) c b
-                                        , movesList = m : m'
-                                        , turn = turn' + 1
-                                        , bking = (file2, rank2)}
-                                else
-                                    game { board = movePiecesinCastle (file1, rank1) (file2, rank2) c b
-                                        , movesList = m : m'
-                                        , turn = turn' + 1
-                                        , wking = (file2, rank2)}
+                            game { board = movePiecesinCastle (file1, rank1) (file2, rank2) c b
+                                 , bking = (file2, rank2)}
                         else
-                            if c == Black
-                                then
-                                    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (King c) b)
-                                        , movesList = m : m'
-                                        , turn = turn' + 1
-                                        , bking = (file2, rank2)}
-                                else
-                                    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (King c) b)
-                                        , movesList = m : m'
-                                        , turn = turn' + 1 
-                                        , wking = (file2, rank2)}
+                            game { board = movePiecesinCastle (file1, rank1) (file2, rank2) c b
+                                 , wking = (file2, rank2)}
+                else
+                    if c == Black
+                        then
+                            game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (King c) b)
+                                 , bking = (file2, rank2)}
+                        else
+                            game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (King c) b)
+                                 , wking = (file2, rank2)}
 
-                Just (Pawn White) ->
-                    if (rank1 == 3 && abs (file1 - file2) == 1 && getTile (file2, rank2) b == Just Empty) 
-                        then game { board = moveEnPassant (file1, rank1) (file2, rank2) White b
-                                  , movesList = m : m'
-                                  , turn = turn' + 1 }
+        Just (Pawn White) ->
+            if (rank1 == 3 && abs (file1 - file2) == 1 && getTile (file2, rank2) b == Just Empty) 
+                then 
+                    game { board = moveEnPassant (file1, rank1) (file2, rank2) White b}
+                else 
+                    if rank1 == 1 
+                        then
+                            pawnPromotion (file1, rank1) (file2, rank2) (Queen White) game
+                        else
+                            game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn White) b)}
+
+        Just (Pawn Black) ->
+            if (rank1 == 4 && abs (file1 - file2) == 1 && getTile (file2,rank2) b == Just Empty) 
+                then game { board = moveEnPassant (file1, rank1) (file2, rank2) Black b}
+                else
+                    if rank1 == 6 
+                        then
+                            pawnPromotion (file1, rank1) (file2, rank2) (Queen Black) game
                         else 
-                            if rank1 == 1 
-                                then
-                                    pawnPromotion (file1, rank1) (file2, rank2) (Queen White) game
+                            game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn Black) b)}
 
-                                else
-                                    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn White) b)
-                                         , movesList = m : m'
-                                         , turn = turn' + 1 }
-
-                Just (Pawn Black) ->
-                    if (rank1 == 4 && abs (file1 - file2) == 1 && getTile (file2,rank2) b == Just Empty) 
-                        then game { board = moveEnPassant (file1, rank1) (file2, rank2) Black b
-                                  , movesList = m : m'
-                                  , turn = turn' + 1 }
-                        else
-                            if rank1 == 6 
-                                then
-                                    pawnPromotion (file1, rank1) (file2, rank2) (Queen Black) game
-                                else 
-                                    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn Black) b)
-                                          , movesList = m : m'
-                                          , turn = turn' + 1 }
-
-                Just t' -> game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) t' b)
-                                , movesList = m : m'
-                                , turn = turn' + 1 }
-        else 
-            game
+        Just t' -> game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) t' b)}
     where t = getTile (file1, rank1) b 
           b = board game
-          m = ((file1,rank1), (file2, rank2))
-          m' = movesList game
-          turn' = turn game
 
 
 --Auxiliar Function
@@ -169,21 +154,24 @@ canMove (file1, rank1) (file2, rank2) game
     | (rank1 == rank2) && (file1 == file2) = False
     | team1 == team2           = False
     | not isPlayerTurn         = False
-    | otherwise = 
-        case (getTile (file1, rank1) b) of
-            Nothing         -> False
-            Just (Empty)    -> False
-            Just (Pawn   c) -> canMovePawn (file1, rank1) (file2, rank2) c b || enPassant (file1, rank1) (file2, rank2) c game
-            Just (Rook   c) -> canMoveRook (file1, rank1) (file2, rank2) c b
-            Just (Knight c) -> canMoveKnight (file1, rank1) (file2, rank2) c b
-            Just (Bishop c) -> canMoveBishop (file1, rank1) (file2, rank2) c b
-            Just (Queen  c) -> canMoveQueen (file1, rank1) (file2, rank2) c b
-            Just (King   c) -> canMoveKing (file1, rank1) (file2, rank2) c b || canMakeCastle (file1, rank1) (file2, rank2) c game
+    | otherwise = canMovePiece && not(isChecked newgame)        
     where team1 = fmap getTeam (getTile (file1, rank1) b)
           team2 = fmap getTeam (getTile (file2, rank2) b)
           b = board game
           turn' = turn game
           isPlayerTurn = (team1 == Just (Just White) && turn' `mod` 2 == 1) || (team1 == Just (Just Black) && turn' `mod` 2 == 0)
+          canMovePiece = 
+            case (getTile (file1, rank1) b) of
+                Nothing         -> False
+                Just (Empty)    -> False
+                Just (Pawn   c) -> canMovePawn (file1, rank1) (file2, rank2) c b || enPassant (file1, rank1) (file2, rank2) c game
+                Just (Rook   c) -> canMoveRook (file1, rank1) (file2, rank2) c b
+                Just (Knight c) -> canMoveKnight (file1, rank1) (file2, rank2) c b
+                Just (Bishop c) -> canMoveBishop (file1, rank1) (file2, rank2) c b
+                Just (Queen  c) -> canMoveQueen (file1, rank1) (file2, rank2) c b
+                Just (King   c) -> canMoveKing (file1, rank1) (file2, rank2) c b || canMakeCastle (file1, rank1) (file2, rank2) c game  
+          newgame = movePiece' (file1, rank1) (file2, rank2) game
+
 
 canMovePawn :: Coord -> Coord -> Team -> Board -> Bool
 canMovePawn (file1, rank1) (file2, rank2) c b =
@@ -391,6 +379,7 @@ isChecked :: Game -> Bool
 isChecked game
     | even (turn game) = isAttacked (bking game) (board game)
     | otherwise = isAttacked (wking game) (board game)
+
 
 getTeam :: Tile -> Maybe Team
 getTeam Empty          = Nothing
