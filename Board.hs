@@ -43,6 +43,8 @@ data Game = Game { board :: Board
                  , turn :: Int
                  , castle :: Castle
                  , movesList :: [Move]
+                 , wking :: (Int, Int)
+                 , bking :: (Int, Int)
                  }
         deriving ( Show ) 
 
@@ -85,13 +87,29 @@ movePiece (file1, rank1) (file2, rank2) game =
                 Just (King c) ->
                     if abs(file1 - file2) == 2
                         then
-                            game { board = movePiecesinCastle (file1, rank1) (file2, rank2) c b
-                                 , movesList = m : m'
-                                 , turn = turn' + 1 }
+                            if c == Black
+                                then
+                                    game { board = movePiecesinCastle (file1, rank1) (file2, rank2) c b
+                                        , movesList = m : m'
+                                        , turn = turn' + 1
+                                        , bking = (file2, rank2)}
+                                else
+                                    game { board = movePiecesinCastle (file1, rank1) (file2, rank2) c b
+                                        , movesList = m : m'
+                                        , turn = turn' + 1
+                                        , wking = (file2, rank2)}
                         else
-                            game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (King c) b)
-                                 , movesList = m : m'
-                                 , turn = turn' + 1 }
+                            if c == Black
+                                then
+                                    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (King c) b)
+                                        , movesList = m : m'
+                                        , turn = turn' + 1
+                                        , bking = (file2, rank2)}
+                                else
+                                    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (King c) b)
+                                        , movesList = m : m'
+                                        , turn = turn' + 1 
+                                        , wking = (file2, rank2)}
 
                 Just (Pawn White) ->
                     if (rank1 == 3 && abs (file1 - file2) == 1 && getTile (file2, rank2) b == Just Empty) 
@@ -369,6 +387,11 @@ pawnPromotion (file1, rank1) (file2, rank2) t game =
          , turn = (turn game) + 1 }
 
 
+isChecked :: Game -> Bool
+isChecked game
+    | even (turn game) = isAttacked (bking game) (board game)
+    | otherwise = isAttacked (wking game) (board game)
+
 getTeam :: Tile -> Maybe Team
 getTeam Empty          = Nothing
 getTeam (Pawn White)   = Just White
@@ -398,7 +421,7 @@ testBoard = [ testRow1
             , testRow7
             , testRow8 ] 
 
-g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = []}
+g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = [], wking = (4, 7), bking = (4, 0)}
 
 b1  = movePiece (1, 6) (1, 4) g1  -- Wpawn avança duas casas 
 b2  = movePiece (2, 7) (0, 5) b1  -- Wbishop avança diag sup esq
