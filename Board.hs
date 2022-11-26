@@ -44,7 +44,7 @@ data Game = Game { board :: Board
                  , castle :: Castle
                  , movesList :: [Move]
                  }
-        deriving ( Show )
+        deriving ( Show ) 
 
 showRow :: [Tile] -> IO ()
 showRow []     = return () 
@@ -64,292 +64,292 @@ showBoard (x:xs) = do showRow x
                       showBoard xs
 
 getTile :: Coord -> Board -> Maybe Tile
-getTile (x, y) b
-    | x < 0 || y < 0 || x > 7 || y > 7 = Nothing
-    | otherwise                        = Just $ b !! x !! y
+getTile (file, rank) b
+    | rank < 0 || file < 0 || rank > 7 || file > 7 = Nothing
+    | otherwise                        = Just $ b !! rank !! file
 
 setTile :: Coord -> Tile -> Board -> Board
-setTile (0, y) t (r:rs) = setTile' y t r : rs
-setTile (x, y) t (r:rs) = r : setTile ((x - 1), y) t rs 
+setTile (file, 0) t (r:rs) = setTile' file t r : rs
+setTile (file, rank) t (r:rs) = r : setTile (file, rank - 1) t rs 
 
 setTile' :: Int -> Tile -> [Tile] -> [Tile]
 setTile' 0 t (y:ys) = t : ys
 setTile' x t (y:ys) = y : setTile' (x-1) t ys
 
 movePiece :: Coord -> Coord -> Game -> Game
-movePiece (x1, y1) (x2, y2) game = 
-    if canMove (x1, y1) (x2, y2) game
+movePiece (file1, rank1) (file2, rank2) game = 
+    if canMove (file1, rank1) (file2, rank2) game
         then
             case t of
                 Nothing -> game
                 Just (King c) ->
-                    if abs(y1 - y2) == 2
+                    if abs(file1 - file2) == 2
                         then
-                            game { board = movePiecesinCastle (x1, y1) (x2, y2) c b
+                            game { board = movePiecesinCastle (file1, rank1) (file2, rank2) c b
                                  , movesList = m : m'
                                  , turn = turn' + 1 }
                         else
-                            game { board = setTile (x1, y1) Empty (setTile (x2, y2) (King c) b)
+                            game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (King c) b)
                                  , movesList = m : m'
                                  , turn = turn' + 1 }
 
                 Just (Pawn White) ->
-                    if (x1 == 3 && abs (y1 - y2) == 1 && getTile (x2,y2) b == Just Empty) 
-                        then game { board = moveEnPassant (x1, y1) (x2, y2) White b
+                    if (rank1 == 3 && abs (file1 - file2) == 1 && getTile (file2, rank2) b == Just Empty) 
+                        then game { board = moveEnPassant (file1, rank1) (file2, rank2) White b
                                   , movesList = m : m'
                                   , turn = turn' + 1 }
-                        else game { board = setTile (x1, y1) Empty (setTile (x2, y2) (Pawn White) b)
+                        else game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn White) b)
                                   , movesList = m : m'
                                   , turn = turn' + 1 }
 
                 Just (Pawn Black) ->
-                    if (x1 == 4 && abs (y1 - y2) == 1 && getTile (x2,y2) b == Just Empty) 
-                        then game { board = moveEnPassant (x1, y1) (x2, y2) Black b
+                    if (rank1 == 4 && abs (file1 - file2) == 1 && getTile (file2,rank2) b == Just Empty) 
+                        then game { board = moveEnPassant (file1, rank1) (file2, rank2) Black b
                                   , movesList = m : m'
                                   , turn = turn' + 1 }
-                        else game { board = setTile (x1, y1) Empty (setTile (x2, y2) (Pawn Black) b)
+                        else game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn Black) b)
                                   , movesList = m : m'
                                   , turn = turn' + 1 }
 
-                Just t' -> game { board = setTile (x1, y1) Empty (setTile (x2, y2) t' b)
+                Just t' -> game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) t' b)
                                 , movesList = m : m'
                                 , turn = turn' + 1 }
         else 
             game
-    where t = getTile (x1, y1) b 
+    where t = getTile (file1, rank1) b 
           b = board game
-          m = ((x1,y1), (x2,y2))
+          m = ((file1,rank1), (file2, rank2))
           m' = movesList game
           turn' = turn game
 
 
 --Auxiliar Function
 movePiecesinCastle :: Coord -> Coord -> Team -> Board -> Board
-movePiecesinCastle (x1, y1) (x2, y2) c b
-    | y2 == 2 = setTile (x1, 0) Empty (setTile (x2, 3) (Rook c) moveKing)
-    | y2 == 6 = setTile (x1, 7) Empty (setTile (x2, 5) (Rook c) moveKing)
+movePiecesinCastle (file1, rank1) (file2, rank2) c b
+    | file2 == 2 = setTile (0, rank1) Empty (setTile (3, rank2) (Rook c) moveKing)
+    | file2 == 6 = setTile (7, rank1) Empty (setTile (5, rank2) (Rook c) moveKing)
     | otherwise = b -- "unnecessary"
-    where moveKing = setTile (x1, y1) Empty (setTile (x2, y2) (King c) b)
+    where moveKing = setTile (file1, rank1) Empty (setTile (file2, rank2) (King c) b)
 
 moveEnPassant :: Coord -> Coord -> Team -> Board -> Board
-moveEnPassant (x1, y1) (x2, y2) c b = setTile (x1,y1) Empty (setTile (x1, y2) Empty (setTile (x2,y2) (Pawn c) b))
+moveEnPassant (file1, rank1) (file2, rank2) c b = setTile (file1, rank1) Empty (setTile (file2, rank1) Empty (setTile (file2, rank2) (Pawn c) b))
 
     -- TODO: Check if tile 2 is inside the board
 canMove :: Coord -> Coord -> Game -> Bool
-canMove (x1, y1) (x2, y2) game
-    | (x1 == x2) && (y1 == y2) = False
+canMove (file1, rank1) (file2, rank2) game
+    | (rank1 == rank2) && (file1 == file2) = False
     | team1 == team2           = False
     | not isPlayerTurn         = False
     | otherwise = 
-        case (getTile (x1, y1) b) of
+        case (getTile (file1, rank1) b) of
             Nothing         -> False
             Just (Empty)    -> False
-            Just (Pawn   c) -> canMovePawn (x1, y1) (x2, y2) c b || enPassant (x1, y1) (x2,y2) c game
-            Just (Rook   c) -> canMoveRook (x1, y1) (x2, y2) c b
-            Just (Knight c) -> canMoveKnight (x1, y1) (x2, y2) c b
-            Just (Bishop c) -> canMoveBishop (x1, y1) (x2, y2) c b
-            Just (Queen  c) -> canMoveQueen (x1, y1) (x2, y2) c b
-            Just (King   c) -> canMoveKing (x1, y1) (x2, y2) c b || canMakeCastle (x1, y1) (x2, y2) c game
-    where team1 = fmap getTeam (getTile (x1, y1) b)
-          team2 = fmap getTeam (getTile (x2, y2) b)
+            Just (Pawn   c) -> canMovePawn (file1, rank1) (file2, rank2) c b || enPassant (file1, rank1) (file2, rank2) c game
+            Just (Rook   c) -> canMoveRook (file1, rank1) (file2, rank2) c b
+            Just (Knight c) -> canMoveKnight (file1, rank1) (file2, rank2) c b
+            Just (Bishop c) -> canMoveBishop (file1, rank1) (file2, rank2) c b
+            Just (Queen  c) -> canMoveQueen (file1, rank1) (file2, rank2) c b
+            Just (King   c) -> canMoveKing (file1, rank1) (file2, rank2) c b || canMakeCastle (file1, rank1) (file2, rank2) c game
+    where team1 = fmap getTeam (getTile (file1, rank1) b)
+          team2 = fmap getTeam (getTile (file2, rank2) b)
           b = board game
           turn' = turn game
           isPlayerTurn = (team1 == Just (Just White) && turn' `mod` 2 == 1) || (team1 == Just (Just Black) && turn' `mod` 2 == 0)
 
 canMovePawn :: Coord -> Coord -> Team -> Board -> Bool
-canMovePawn (x1, y1) (x2, y2) c b =
+canMovePawn (file1, rank1) (file2, rank2) c b =
     case c of
         Black -> 
-            case getTile (x2, y2) b of
+            case getTile (file2, rank2) b of
                 Nothing -> False
                 Just Empty -> 
-                    (x2 - x1 == 1 || (x1 == 1 && x2 == 3)) && y1 == y2
+                    (rank2 - rank1 == 1 || (rank1 == 1 && rank2 == 3)) && file1 == file2
                 Just x     -> 
                     case getTeam x of
                         Just Black -> False
-                        Just White -> x2 - x1 == 1 && abs (y1 - y2) == 1
+                        Just White -> rank2 - rank1 == 1 && abs (file1 - file2) == 1
         White -> 
-            case getTile (x2, y2) b of
+            case getTile (file2, rank2) b of
                 Nothing -> False
                 Just Empty -> 
-                    (x1 - x2 == 1 || (x1 == 6 &&  x2 == 4)) && y1 == y2 
+                    (rank1 - rank2 == 1 || (rank1 == 6 &&  rank2 == 4)) && file1 == file2 
                 Just x     -> 
                     case getTeam x of
                         Just White -> False
-                        Just Black -> x1 - x2 == 1 && abs (y1 - y2) == 1
+                        Just Black -> rank1 - rank2 == 1 && abs (file1 - file2) == 1
 
 canMoveRook :: Coord -> Coord -> Team -> Board -> Bool
-canMoveRook (x1,y1) (x2,y2) c b
-    | (x1 == x2) && (y1 == y2) = True
-    | (x1 == x2) = 
-        if (y1 < y2)
+canMoveRook (file1, rank1) (file2, rank2) c b
+    | (rank1 == rank2) && (file1 == file2) = True
+    | (rank1 == rank2) = 
+        if (file1 < file2)
             then
-                case getTile (x1, y1 + 1) b of 
+                case getTile (file1 + 1, rank1) b of 
                     Nothing -> False
-                    Just Empty -> canMoveRook (x1, y1 + 1) (x2, y2) c b
-                    Just x     -> (y1 + 1) == y2 
+                    Just Empty -> canMoveRook (file1 + 1, rank1) (file2, rank2) c b
+                    Just x     -> (file1 + 1) == file2 
             else
-                case getTile (x1, y1 - 1) b of 
+                case getTile (file1 - 1, rank1) b of 
                     Nothing -> False
-                    Just Empty -> canMoveRook (x1, y1 - 1) (x2, y2) c b
-                    Just x     -> (y1 - 1) == y2
-    | (y1 == y2) = 
-        if (x1 < x2)
-            then
-                case getTile (x1 + 1, y1) b of 
+                    Just Empty -> canMoveRook (file1 - 1, rank1) (file2, rank2) c b
+                    Just x     -> (file1 - 1) == file2
+    | (file1 == file2) = 
+        if (rank1 < rank2)
+            then 
+                case getTile (file1, rank1 + 1) b of 
                     Nothing -> False
-                    Just Empty -> canMoveRook (x1 + 1, y1) (x2, y2) c b
-                    Just x     -> (x1 + 1) == x2
-            else
-                case getTile (x1 - 1, y2) b of 
+                    Just Empty -> canMoveRook (file1, rank1 + 1) (file2, rank2) c b
+                    Just x     -> (rank1 + 1) == rank2
+            else 
+                case getTile (file1, rank1 - 1) b of 
                     Nothing -> False
-                    Just Empty -> canMoveRook (x1 - 1,y1) (x2, y2) c b
-                    Just x     -> (x1 - 1) == x2  
+                    Just Empty -> canMoveRook (file1, rank1 - 1) (file2, rank2) c b
+                    Just x     -> (rank1 - 1) == rank2  
     | otherwise = False
 
 canMoveBishop :: Coord -> Coord -> Team -> Board -> Bool
-canMoveBishop (x1,y1) (x2,y2) c b
-    | (x1 == x2) && (y1 == y2) = True
-    | abs(x1 - x2) /= abs(y1 - y2) = False
+canMoveBishop (file1, rank1) (file2, rank2) c b
+    | (rank1 == rank2) && (file1 == file2) = True
+    | abs(rank1 - rank2) /= abs(file1 - file2) = False
     | otherwise = 
-        if (y1 < y2) 
+        if (file1 < file2) 
             then
-                if (x1 < x2)
+                if (rank1 < rank2)
                     then
-                        case getTile (x1 + 1, y1 + 1) b of 
+                        case getTile (file1 + 1, rank1 + 1) b of 
                             Nothing -> False
-                            Just Empty -> canMoveBishop (x1 + 1, y1 + 1) (x2, y2) c b
-                            Just x     -> (x1 + 1, y1 + 1) == (x2, y2) 
-                    else
-                        case getTile (x1 - 1, y1 + 1) b of 
+                            Just Empty -> canMoveBishop (file1 + 1, rank1 + 1) (file2, rank2) c b
+                            Just x     -> (file1 + 1, rank1 + 1) == (file2, rank2) 
+                    else 
+                        case getTile (file1 + 1, rank1 - 1) b of 
                             Nothing -> False
-                            Just Empty -> canMoveBishop (x1 - 1, y1 + 1) (x2, y2) c b
-                            Just x     -> (x1 - 1, y1 + 1) == (x2, y2)
+                            Just Empty -> canMoveBishop (file1 + 1, rank1 - 1) (file2, rank2) c b
+                            Just x     -> (file1 + 1, rank1 - 1) == (file2, rank2)
             else
-                if (x1 < x2)
-                    then
-                        case getTile (x1 + 1, y1 - 1) b of 
+                if (rank1 < rank2)
+                    then 
+                        case getTile (file1 - 1, rank1 + 1) b of 
                             Nothing -> False
-                            Just Empty -> canMoveBishop (x1 + 1, y1 - 1) (x2, y2) c b
-                            Just x     -> (x1 + 1, y1 - 1) == (x2, y2) 
-                    else
-                        case getTile (x1 - 1, y1 - 1) b of 
+                            Just Empty -> canMoveBishop (file1 - 1, rank1 + 1) (file2, rank2) c b
+                            Just x     -> (file1 - 1, rank1 + 1) == (file2, rank2) 
+                    else 
+                        case getTile (file1 - 1, rank1 - 1) b of 
                             Nothing -> False
-                            Just Empty -> canMoveBishop (x1 - 1, y1 - 1) (x2, y2) c b
-                            Just x     -> (x1 - 1, y1 - 1) == (x2, y2)
+                            Just Empty -> canMoveBishop (file1 - 1, rank1 - 1) (file2, rank2) c b
+                            Just x     -> (file1 - 1, rank1 - 1) == (file2, rank2)
 
 
 canMoveQueen :: Coord -> Coord -> Team -> Board -> Bool
-canMoveQueen (x1, y1) (x2, y2) c b = canMoveBishop (x1, y1) (x2, y2) c b || canMoveRook (x1, y1) (x2, y2) c b
+canMoveQueen (file1, rank1) (file2, rank2) c b = canMoveBishop (file1, rank1) (file2, rank2) c b || canMoveRook (file1, rank1) (file2, rank2) c b
 
 canMoveKnight :: Coord -> Coord -> Team -> Board -> Bool
-canMoveKnight (x1, y1) (x2, y2) c b =
-    ((abs (x1 - x2) == 1 && abs (y1 - y2) == 2) || (abs (x1 - x2) == 2 && abs (y1 - y2) == 1))
+canMoveKnight (file1, rank1) (file2, rank2) c b =
+    ((abs (rank1 - rank2) == 1 && abs (file1 - file2) == 2) || (abs (rank1 - rank2) == 2 && abs (file1 - file2) == 1))
 
 canMoveKing :: Coord -> Coord -> Team -> Board -> Bool
-canMoveKing (x1, y1) (x2, y2) c b = abs (x1 - x2) <= 1 && abs (y1 - y2) <= 1
+canMoveKing (file1, rank1) (file2, rank2) c b = abs (rank1 - rank2) <= 1 && abs (file1 - file2) <= 1
 
 isAttacked :: Coord -> Board -> Bool
-isAttacked (x,y) b =  
-    case getTile (x,y) b of
+isAttacked (file, rank) b =  
+    case getTile (file, rank) b of
         Nothing -> False -- Check if the return type must be maybe bool
         Just t  -> 
-            isAttackedByPawn (x,y)   mt b ||
-            isAttackedLine   (x,y)   mt b ||
-            isAttackedByKnight (x,y) mt b 
-            -- isAttackedByKing (x,y) mt b
+            isAttackedByPawn (file, rank)   mt b ||
+            isAttackedLine   (file, rank)   mt b ||
+            isAttackedByKnight (file, rank) mt b 
+            -- isAttackedByKing (file, rank) mt b
             where mt = getTeam t
 
 isAttackedByPawn :: Coord -> Maybe Team -> Board -> Bool
-isAttackedByPawn (x,y) Nothing      b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
-isAttackedByPawn (x,y) (Just White) b =
-    getTile (x - 1, y - 1) b == Just (Pawn Black) ||
-    getTile (x - 1, y + 1) b == Just (Pawn Black)
-isAttackedByPawn (x,y) (Just Black) b =
-    getTile (x + 1, y - 1) b == Just (Pawn White) ||
-    getTile (x + 1, y + 1) b == Just (Pawn White)
+isAttackedByPawn (file, rank) Nothing      b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
+isAttackedByPawn (file, rank) (Just White) b =
+    getTile (file - 1, rank - 1) b == Just (Pawn Black) ||
+    getTile (file + 1, rank - 1) b == Just (Pawn Black)
+isAttackedByPawn (file, rank) (Just Black) b =
+    getTile (file - 1, rank + 1) b == Just (Pawn White) ||
+    getTile (file + 1, rank + 1) b == Just (Pawn White)
 
 isAttackedLine :: Coord -> Maybe Team -> Board -> Bool
-isAttackedLine (x,y) Nothing b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
-isAttackedLine (x,y) t       b = 
-    isAttackedLine' (x,y) succ id   t b ||
-    isAttackedLine' (x,y) succ pred t b ||
-    isAttackedLine' (x,y) succ succ t b ||
-    isAttackedLine' (x,y) pred id   t b ||
-    isAttackedLine' (x,y) pred pred t b ||
-    isAttackedLine' (x,y) pred succ t b ||
-    isAttackedLine' (x,y) id   pred t b ||
-    isAttackedLine' (x,y) id   succ t b
+isAttackedLine (file, rank) Nothing b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
+isAttackedLine (file, rank) t       b = 
+    isAttackedLine' (file, rank) id   succ t b ||
+    isAttackedLine' (file, rank) pred succ t b ||
+    isAttackedLine' (file, rank) succ succ t b ||
+    isAttackedLine' (file, rank) id   pred t b ||
+    isAttackedLine' (file, rank) pred pred t b ||
+    isAttackedLine' (file, rank) succ pred t b ||
+    isAttackedLine' (file, rank) pred id   t b ||
+    isAttackedLine' (file, rank) succ id   t b
 
 -- TODO: check t2 type
 isAttackedLine' :: Coord -> (Int -> Int) -> (Int -> Int) -> Maybe Team -> Board -> Bool
-isAttackedLine' (x,y) _ _ Nothing b = False  -- "unnecessary"
-isAttackedLine' (x,y) f g t1      b = 
-    case fmap getTeam (getTile (f x, g y) b) of
+isAttackedLine' (file, rank) _ _ Nothing b = False  -- "unnecessary"
+isAttackedLine' (file, rank) f g t1      b = 
+    case fmap getTeam (getTile (f file, g rank) b) of
         Nothing -> False
         Just t2 ->
             if t1 == t2 
                 then
                     False
                 else
-                    case getTile (f x, g y) b of
+                    case getTile (f file, g rank) b of
                         Just (Queen t2)  -> True
-                        Just (Rook t2)   -> f x == id x || g y == id y
-                        Just (Bishop t2) -> f x /= id x && g y /= id y
-                        Just Empty       -> isAttackedLine' (f x, g y) f g t1 b
+                        Just (Rook t2)   -> f file == id file || g rank == id rank 
+                        Just (Bishop t2) -> f file /= id file && g rank /= id rank 
+                        Just Empty       -> isAttackedLine' (f file, g rank) f g t1 b
                         _                -> False
 
 
 isAttackedByKnight :: Coord -> Maybe Team -> Board -> Bool
-isAttackedByKnight (x,y) Nothing      b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
-isAttackedByKnight (x,y) (Just White) b = 
-    getTile (x - 1, y - 2) b == Just (Knight Black) ||
-    getTile (x - 1, y + 2) b == Just (Knight Black) ||
-    getTile (x + 1, y - 2) b == Just (Knight Black) ||
-    getTile (x + 1, y + 2) b == Just (Knight Black) ||
-    getTile (x - 2, y - 1) b == Just (Knight Black) ||
-    getTile (x - 2, y + 1) b == Just (Knight Black) ||
-    getTile (x + 2, y - 1) b == Just (Knight Black) ||
-    getTile (x + 2, y + 1) b == Just (Knight Black)
-isAttackedByKnight (x,y) (Just Black) b = 
-    getTile (x - 1, y - 2) b == Just (Knight White) ||
-    getTile (x - 1, y + 2) b == Just (Knight White) ||
-    getTile (x + 1, y - 2) b == Just (Knight White) ||
-    getTile (x + 1, y + 2) b == Just (Knight White) ||
-    getTile (x - 2, y - 1) b == Just (Knight White) ||
-    getTile (x - 2, y + 1) b == Just (Knight White) ||
-    getTile (x + 2, y - 1) b == Just (Knight White) ||
-    getTile (x + 2, y + 1) b == Just (Knight White)
+isAttackedByKnight (file, rank) Nothing      b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
+isAttackedByKnight (file, rank) (Just White) b = 
+    getTile (file - 2, rank - 1) b == Just (Knight Black) ||
+    getTile (file + 2, rank - 1) b == Just (Knight Black) ||
+    getTile (file - 2, rank + 1) b == Just (Knight Black) ||
+    getTile (file + 2, rank + 1) b == Just (Knight Black) ||
+    getTile (file - 1, rank - 2) b == Just (Knight Black) ||
+    getTile (file + 1, rank - 2) b == Just (Knight Black) ||
+    getTile (file - 1, rank + 2) b == Just (Knight Black) ||
+    getTile (file + 1, rank + 2) b == Just (Knight Black)
+isAttackedByKnight (file, rank) (Just Black) b = 
+    getTile (file - 2, rank - 1) b == Just (Knight White) ||
+    getTile (file + 2, rank - 1) b == Just (Knight White) ||
+    getTile (file - 2, rank + 1) b == Just (Knight White) ||
+    getTile (file + 2, rank + 1) b == Just (Knight White) ||
+    getTile (file - 1, rank - 2) b == Just (Knight White) ||
+    getTile (file + 1, rank - 2) b == Just (Knight White) ||
+    getTile (file - 1, rank + 2) b == Just (Knight White) ||
+    getTile (file + 1, rank + 2) b == Just (Knight White)
 
 
 canMakeCastle :: Coord -> Coord -> Team -> Game -> Bool
-canMakeCastle (x1, y1) (x2, y2) c game
-    | x1 /= x2 || (x1 /= 0 && x1 /= 7) = False
-    | y1 == 4 && y2 == 2 && x1 == 0    = m1 && canMakeCastle' (x1, y1) (x2, y2) c game 
-    | y1 == 4 && y2 == 6 && x1 == 0    = m2 && canMakeCastle' (x1, y1) (x2, y2) c game 
-    | y1 == 4 && y2 == 2 && x1 == 7    = m3 && canMakeCastle' (x1, y1) (x2, y2) c game 
-    | y1 == 4 && y2 == 6 && x1 == 7    = m4 && canMakeCastle' (x1, y1) (x2, y2) c game 
+canMakeCastle (file1, rank1) (file2, rank2) c game
+    | rank1 /= rank2 || (rank1 /= 0 && rank1 /= 7) = False
+    | file1 == 4 && file2 == 2 && rank1 == 0    = m1 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
+    | file1 == 4 && file2 == 6 && rank1 == 0    = m2 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
+    | file1 == 4 && file2 == 2 && rank1 == 7    = m3 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
+    | file1 == 4 && file2 == 6 && rank1 == 7    = m4 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
     | otherwise                        = False
     where (m1,m2,m3,m4) = castle game
 
 --TODO: check the rule of Castle when the king is already in check 
 canMakeCastle' :: Coord -> Coord -> Team -> Game -> Bool
-canMakeCastle' (x1, y1) (x2, y2) c game
-    | y1 == 4 && y2 == 6 = isEmpty (x2, 5) b && isEmpty (x2, 6) b && (canMove (x1, 4) (x2, 5) game) && (canMove (x2, 5) (x2, 6) (movePiece (x1, 4) (x2, 5) game))
-    | y1 == 4 && y2 == 2 = isEmpty (x2, 3) b && isEmpty (x2, 2) b && isEmpty (x2, 1) b && (canMove (x1, 4) (x2, 3) game) && (canMove (x2, 3) (x2, 2) (movePiece (x1, 4) (x2, 3) game)) 
+canMakeCastle' (file1, rank1) (file2, rank2) c game
+    | file1 == 4 && file2 == 6 = isEmpty (5, rank2) b && isEmpty (6, rank2) b && (canMove (4, rank1) (5, rank2) game) && (canMove (5, rank2) (6, rank2) (movePiece (4, rank1) (5, rank2) game))
+    | file1 == 4 && file2 == 2 = isEmpty (3, rank2) b && isEmpty (2, rank2) b && isEmpty (1, rank2) b && (canMove (4, rank1) (3, rank2) game) && (canMove (3, rank2) (2, rank2) (movePiece (4, rank1) (3, rank2) game)) 
     | otherwise = False
     where b = board game 
-          isEmpty(x, y) b = getTile (x, y) b == Just Empty
+          isEmpty(file, rank) b = getTile (file, rank) b == Just Empty
 
 enPassant :: Coord -> Coord -> Team -> Game -> Bool
-enPassant (x1,y1) (x2,y2) White game =
-    x1 == 3 && 
-    getTile (x1, y2) (board game) == Just (Pawn Black) &&
-    head (movesList game) == ((1, y2), (3, y2))
-enPassant (x1,y1) (x2,y2) Black game = 
-    x1 == 4 && 
-    getTile (x1, y2) (board game) == Just (Pawn White) &&
-    head (movesList game) == ((6, y2), (4, y2))
+enPassant (file1, rank1) (file2, rank2) White game =
+    rank1 == 3 && 
+    getTile (file2, rank1) (board game) == Just (Pawn Black) &&
+    head (movesList game) == ((file2, 1), (file2, 3))
+enPassant (file1, rank1) (file2, rank2) Black game = 
+    rank1 == 4 && 
+    getTile (file2, rank1) (board game) == Just (Pawn White) &&
+    head (movesList game) == ((file2, 6), (file2, 4))
 
 
 getTeam :: Tile -> Maybe Team
@@ -383,68 +383,68 @@ testBoard = [ testRow1
 
 g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = []}
 
-b1  = movePiece (6, 1) (4, 1) g1 -- Wpawn avança duas casas 
-b2  = movePiece (7, 2) (5, 0) b1 -- Wbishop avança diag sup esq
-b3  = movePiece (5, 0) (4, 1) b2 -- movimento invalido do Wbishop por peça do mesmo time
-b4  = movePiece (4, 1) (3, 1) b3 -- wpawn avança uma casa
-b5  = movePiece (5, 0) (1, 4) b4 -- wbishop captura (para diag sup dir) bpawn
-b6  = movePiece (1, 4) (4, 7) b5 -- Wbishop move diag inf dir
-b7  = movePiece (4, 7) (5, 6) b6 -- Wbishop move diag inf esq
-b8  = movePiece (0, 5) (4, 1) b7 -- Bbishop move diag inf esq
-b9  = movePiece (4, 1) (7, 4) b8 -- mov inválido do Bbishop por sentido de movimento ocupado
-b10 = movePiece (4, 1) (6, 3) b9 -- Bbishop captura (para diag inf dir) Wpawn
-b11 = movePiece (6, 3) (4, 3) b10 -- mov inválido do Bbishop (vertical)
-b12 = movePiece (5, 6) (5, 0) b11 -- mov inválido do Wbishop (horizontal)
+b1  = movePiece (1, 6) (1, 4) g1  -- Wpawn avança duas casas 
+b2  = movePiece (2, 7) (0, 5) b1  -- Wbishop avança diag sup esq
+b3  = movePiece (0, 5) (1, 4) b2  -- movimento invalido do Wbishop por peça do mesmo time
+b4  = movePiece (1, 4) (1, 3) b3  -- wpawn avança uma casa
+b5  = movePiece (0, 5) (4, 1) b4  -- wbishop captura (para diag sup dir) bpawn
+b6  = movePiece (4, 1) (7, 4) b5  -- Wbishop move diag inf dir
+b7  = movePiece (7, 4) (6, 5) b6  -- Wbishop move diag inf esq
+b8  = movePiece (5, 0) (1, 4) b7  -- Bbishop move diag inf esq
+b9  = movePiece (1, 4) (4, 7) b8  -- mov inválido do Bbishop por sentido de movimento ocupado
+b10 = movePiece (1, 4) (3, 6) b9  -- Bbishop captura (para diag inf dir) Wpawn
+b11 = movePiece (3, 6) (3, 4) b10 -- mov inválido do Bbishop (vertical)
+b12 = movePiece (6, 5) (0, 5) b11 -- mov inválido do Wbishop (horizontal)
 
-r1  = movePiece (6, 0) (4, 0) g1  
-r2  = movePiece (7, 0) (5, 0) r1 --movimento Wrook vertical cima
-r3  = movePiece (5, 0) (5, 7) r2 --movimento Wrook horizontal
-r4  = movePiece (5, 7) (1, 7) r3 --Wrook captura (para cima) Bpawn
-r5  = movePiece (1, 7) (1, 6) r4 --Wrook captura (para esq) Bpawn
-r6  = movePiece (1, 6) (0, 5) r5 --mov invalido Wrook diagonal
-r7  = movePiece (1, 6) (4, 6) r6 --movimento Wrook vertical baixo
-r8  = movePiece (4, 6) (4, 1) r7 --movimento Wrook horizontal esq
-r9  = movePiece (4, 1) (0, 1) r8 --mov invalido Wrook por sentido de mov ocupado
+r1  = movePiece (0, 6) (0, 4) g1  
+r2  = movePiece (0, 7) (0, 5) r1 -- movimento Wrook vertical cima
+r3  = movePiece (0, 5) (7, 5) r2 -- movimento Wrook horizontal
+r4  = movePiece (7, 5) (7, 1) r3 -- Wrook captura (para cima) Bpawn
+r5  = movePiece (7, 1) (6, 1) r4 -- Wrook captura (para esq) Bpawn
+r6  = movePiece (6, 1) (5, 0) r5 -- mov invalido Wrook diagonal
+r7  = movePiece (6, 1) (6, 4) r6 -- movimento Wrook vertical baixo
+r8  = movePiece (6, 4) (1, 4) r7 -- movimento Wrook horizontal esq
+r9  = movePiece (1, 4) (1, 0) r8 -- mov invalido Wrook por sentido de mov ocupado
 
-n1  = movePiece (7, 1) (5, 0) g1 -- mov Wknight sup esq
-n2  = movePiece (5, 0) (3, 1) n1 --mov Wknight sup dir
-n3  = movePiece (3, 1) (1, 2) n2 --Wknight captura (para direção sup dir) Bpawn
-n4  = movePiece (1, 2) (2, 3) n3 -- movimento invalido Wknight
-n5  = movePiece (1, 2) (3, 3) n4 -- movimento Wknight inf dir
-n6  = movePiece (3, 3) (5, 2) n5 -- movimento Wknight inf esq
-n7  = movePiece (5, 2) (6, 4) n6 -- movimento invalido Wknight por tile ocupado pela mesma cor 
-n8  = movePiece (5, 2) (4, 4) n7 -- movimento Wknight dir sup 
+n1  = movePiece (1, 7) (0, 5) g1 -- mov Wknight sup esq
+n2  = movePiece (0, 5) (1, 3) n1 -- mov Wknight sup dir
+n3  = movePiece (1, 3) (2, 1) n2 -- Wknight captura (para direção sup dir) Bpawn
+n4  = movePiece (2, 1) (3, 2) n3 -- movimento invalido Wknight
+n5  = movePiece (2, 1) (3, 3) n4 -- movimento Wknight inf dir
+n6  = movePiece (3, 3) (2, 5) n5 -- movimento Wknight inf esq
+n7  = movePiece (2, 5) (4, 6) n6 -- movimento invalido Wknight por tile ocupado pela mesma cor 
+n8  = movePiece (2, 5) (4, 4) n7 -- movimento Wknight dir sup 
 
-k1  = movePiece (6, 4) (4, 4) g1 -- mov Wpawn cima
-k2  = movePiece (7, 4) (5, 4) k1 --mov invalido (pular uma casa) Wking sup 
-k3  = movePiece (7 ,4) (6, 4) k2 --mov Wking cima
-k4  = movePiece (6 ,4) (5, 4) k3 -- mov Wking cima
-k5  = movePiece (5 ,4) (5, 5) k4 -- mov Wking direita 
-k6  = movePiece (5 ,4) (5, 3) k4 -- mov Wking esquerda 
-k7  = movePiece (5 ,4) (4, 5) k4 -- mov Wking direita cima
-k8  = movePiece (5 ,4) (4, 3) k4 -- mov Wking esquerda cima
-k9  = movePiece (5 ,4) (6, 5) k4 -- mov Wking para tile ocupada por mesmo time
-k10  = movePiece (6, 3) (4, 3) k4 -- mov Wpawn cima
-k11  = movePiece (5 ,4) (6, 3) k10 -- mov Wking baixo esq
-k12  = movePiece (6, 3) (7, 4) k11 -- mov Wking baixo dir
+k1  = movePiece (4, 6) (4, 4) g1  -- mov Wpawn cima
+k2  = movePiece (4, 7) (4, 5) k1  -- mov invalido (pular uma casa) Wking sup 
+k3  = movePiece (4, 7) (4, 6) k2  -- mov Wking cima
+k4  = movePiece (4, 6) (4, 5) k3  -- mov Wking cima
+k5  = movePiece (4, 5) (5, 5) k4  -- mov Wking direita 
+k6  = movePiece (4, 5) (3, 5) k4  -- mov Wking esquerda 
+k7  = movePiece (4, 5) (5, 4) k4  -- mov Wking direita cima
+k8  = movePiece (4, 5) (3, 4) k4  -- mov Wking esquerda cima
+k9  = movePiece (4, 5) (5, 6) k4  -- mov Wking para tile ocupada por mesmo time
+k10 = movePiece (3, 6) (3, 4) k4  -- mov Wpawn cima
+k11 = movePiece (4, 5) (3, 6) k10 -- mov Wking baixo esq
+k12 = movePiece (3, 6) (4, 7) k11 -- mov Wking baixo dir
 
-c0 = movePiece (6, 2) (4, 2) g1 --mov wpawn
-c1 = movePiece (7, 1) (5, 2) c0        --mov wknight
-c2 = movePiece (6, 1) (4, 1) c1        --mov wpawn
-c3 = movePiece (7, 2) (5, 0) c2        --mov wbishop
-c4 = movePiece (7, 3) (6, 2) c3        --mov wqueen
-c5 = movePiece (6, 6) (4, 6) c4        --mov wpawn
-c6 = movePiece (7, 6) (5, 5) c5        --mov wknight
-c7 = movePiece (7, 5) (5, 7) c6        --mov wbishop
-c8 = movePiece (7, 4) (7, 6) c7        --castle dir 
-c9 = movePiece (7, 4) (7, 2) c7        --castle esq
+c0  = movePiece (2, 6) (2, 4) g1  --mov wpawn
+c1  = movePiece (1, 7) (2, 5) c0  --mov wknight
+c2  = movePiece (1, 6) (1, 4) c1  --mov wpawn
+c3  = movePiece (2, 7) (0, 5) c2  --mov wbishop
+c4  = movePiece (3, 7) (2, 6) c3  --mov wqueen
+c5  = movePiece (6, 6) (6, 4) c4  --mov wpawn
+c6  = movePiece (6, 7) (5, 5) c5  --mov wknight
+c7  = movePiece (5, 7) (7, 5) c6  --mov wbishop
+c8  = movePiece (4, 7) (6, 7) c7  --castle dir 
+c9  = movePiece (4, 7) (2, 7) c7  --castle esq
 
-e1 = movePiece (6, 1) (4, 1) g1  
-e2 = movePiece (1, 2) (3, 2) e1
-e3 = movePiece (4, 1) (3, 1) e2
-e4 = movePiece (1, 0) (3, 0) e3
-e5 = movePiece (3, 1) (2, 2) e4  -- mov invalido (peão a ser capturado não havia se movido na jogada anterior)
-e6 = movePiece (3, 1) (2, 0) e4  -- en passant certo
-e7 = movePiece (3, 2) (4, 2) e6  
-e8 = movePiece (6, 3) (4, 3) e7  
-e9 = movePiece (4, 2) (5, 3) e8  -- en passant certo
+e1 = movePiece (1, 6) (1, 4) g1  
+e2 = movePiece (2, 1) (2, 3) e1
+e3 = movePiece (1, 4) (1, 3) e2
+e4 = movePiece (0, 1) (0, 3) e3
+e5 = movePiece (1, 3) (2, 2) e4  -- mov invalido (peão a ser capturado não havia se movido na jogada anterior)
+e6 = movePiece (1, 3) (0, 2) e4  -- en passant certo
+e7 = movePiece (2, 3) (2, 4) e6  
+e8 = movePiece (3, 6) (3, 4) e7  
+e9 = movePiece (2, 4) (3, 5) e8  -- en passant certo
