@@ -10,7 +10,9 @@ type Coord = (Int, Int)
 
 type Castle = (Bool, Bool, Bool, Bool) 
 
-type Move = (Coord, Coord)
+data Move = N Coord Coord
+          | PP Coord Coord Tile
+          deriving ( Eq, Show )
 
 data Tile = Pawn Team
           | Rook Team
@@ -78,18 +80,32 @@ setTile' :: Int -> Tile -> [Tile] -> [Tile]
 setTile' 0 t (y:ys) = t : ys
 setTile' x t (y:ys) = y : setTile' (x-1) t ys
 
-movePiece :: Coord -> Coord -> Game -> Game
-movePiece (file1, rank1) (file2, rank2) game  
-    | canMove (file1, rank1) (file2, rank2) game = newgame { movesList = m : m'
-                                                           , turn = turn' + 1}
-    | otherwise = game
-    where newgame = movePiece' (file1, rank1) (file2, rank2) game
-          m = ((file1,rank1), (file2, rank2))
-          m' = movesList newgame
-          turn' = turn newgame
+movePiece :: Move -> Game -> Game
+movePiece (N (file1, rank1) (file2, rank2)) game =
+    if canMove' && not isPP
+        then newgame { movesList = m : ms
+                     , turn = turn' + 1}
+        else game
+    where newgame  = movePiece' (N (file1, rank1) (file2, rank2)) game
+          canMove' = canMove (file1, rank1) (file2, rank2) game 
+          m        = N (file1,rank1) (file2, rank2)
+          ms       = movesList newgame
+          turn'    = turn newgame
+          isPP     = ((getTile (file1, rank1) (board game)) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) (board game)) == Just (Pawn White) && rank1 == 1)
+movePiece (PP (file1, rank1) (file2, rank2) tile) game =
+    if canMove' && isPP
+        then newgame { movesList = m : ms
+                     , turn = turn' + 1}
+        else game
+    where newgame  = movePiece' (PP (file1, rank1) (file2, rank2) tile) game
+          canMove' = canMove (file1, rank1) (file2, rank2) game 
+          m        = PP (file1,rank1) (file2, rank2) tile
+          ms       = movesList newgame
+          turn'    = turn newgame
+          isPP     = ((getTile (file1, rank1) (board game)) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) (board game)) == Just (Pawn White) && rank1 == 1)
 
-movePiece' :: Coord -> Coord -> Game -> Game
-movePiece' (file1, rank1) (file2, rank2) game = 
+movePiece' :: Move -> Game -> Game
+movePiece' (N (file1, rank1) (file2, rank2)) game = 
     case t of
         Nothing -> game
         Just (King c) ->
@@ -118,7 +134,7 @@ movePiece' (file1, rank1) (file2, rank2) game =
                 else 
                     if rank1 == 1 
                         then
-                            pawnPromotion (file1, rank1) (file2, rank2) (Queen White) game
+                            game
                         else
                             game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn White) b)}
 
@@ -128,13 +144,29 @@ movePiece' (file1, rank1) (file2, rank2) game =
                 else
                     if rank1 == 6 
                         then
-                            pawnPromotion (file1, rank1) (file2, rank2) (Queen Black) game
+                            game
                         else 
                             game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Pawn Black) b)}
 
         Just t' -> game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) t' b)}
     where t = getTile (file1, rank1) b 
           b = board game
+movePiece' (PP (file1, rank1) (file2, rank2) tile) game =
+    case t of
+        Just (Pawn White) ->
+            if rank1 == 1 
+                then
+                    pawnPromotion (PP (file1, rank1) (file2, rank2) tile) game
+                else 
+                    game
+        Just (Pawn Black) ->
+            if rank1 == 6 
+                then
+                    pawnPromotion (PP (file1, rank1) (file2, rank2) tile) game
+                else 
+                    game   
+        where t = getTile (file1, rank1) b
+              b = board game
 
 
 --Auxiliar Function
@@ -170,7 +202,7 @@ canMove (file1, rank1) (file2, rank2) game
                 Just (Bishop c) -> canMoveBishop (file1, rank1) (file2, rank2) c b
                 Just (Queen  c) -> canMoveQueen (file1, rank1) (file2, rank2) c b
                 Just (King   c) -> canMoveKing (file1, rank1) (file2, rank2) c b || canMakeCastle (file1, rank1) (file2, rank2) c game  
-          newgame = movePiece' (file1, rank1) (file2, rank2) game
+          newgame = movePiece' (N (file1, rank1) (file2, rank2)) game
 
 
 canMovePawn :: Coord -> Coord -> Team -> Board -> Bool
@@ -352,8 +384,8 @@ canMakeCastle (file1, rank1) (file2, rank2) c game
 --TODO: check the rule of Castle when the king is already in check 
 canMakeCastle' :: Coord -> Coord -> Team -> Game -> Bool
 canMakeCastle' (file1, rank1) (file2, rank2) c game
-    | file1 == 4 && file2 == 6 = isEmpty (5, rank2) b && isEmpty (6, rank2) b && (canMove (4, rank1) (5, rank2) game) && (canMove (5, rank2) (6, rank2) (movePiece (4, rank1) (5, rank2) game))
-    | file1 == 4 && file2 == 2 = isEmpty (3, rank2) b && isEmpty (2, rank2) b && isEmpty (1, rank2) b && (canMove (4, rank1) (3, rank2) game) && (canMove (3, rank2) (2, rank2) (movePiece (4, rank1) (3, rank2) game)) 
+    | file1 == 4 && file2 == 6 = isEmpty (5, rank2) b && isEmpty (6, rank2) b && (canMove (4, rank1) (5, rank2) game) && (canMove (5, rank2) (6, rank2) (movePiece (N (4, rank1) (5, rank2)) game))
+    | file1 == 4 && file2 == 2 = isEmpty (3, rank2) b && isEmpty (2, rank2) b && isEmpty (1, rank2) b && (canMove (4, rank1) (3, rank2) game) && (canMove (3, rank2) (2, rank2) (movePiece (N (4, rank1) (3, rank2)) game)) 
     | otherwise = False
     where b = board game 
           isEmpty(file, rank) b = getTile (file, rank) b == Just Empty
@@ -362,15 +394,27 @@ enPassant :: Coord -> Coord -> Team -> Game -> Bool
 enPassant (file1, rank1) (file2, rank2) White game =
     rank1 == 3 && 
     getTile (file2, rank1) (board game) == Just (Pawn Black) &&
-    head (movesList game) == ((file2, 1), (file2, 3))
+    head (movesList game) == N (file2, 1) (file2, 3)
 enPassant (file1, rank1) (file2, rank2) Black game = 
     rank1 == 4 && 
     getTile (file2, rank1) (board game) == Just (Pawn White) &&
-    head (movesList game) == ((file2, 6), (file2, 4))
+    head (movesList game) == N (file2, 6) (file2, 4)
 
-pawnPromotion :: Coord -> Coord -> Tile -> Game -> Game
-pawnPromotion (file1, rank1) (file2, rank2) t game = 
-    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) t (board game)) }
+pawnPromotion :: Move -> Game -> Game
+pawnPromotion (N _ _) game = game 
+pawnPromotion (PP (file1, rank1) (file2, rank2) tile) game =    
+    case team of
+        Just (Just Black) ->  
+            if testBlackPiece
+                then game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) tile (board game)) }
+                else game
+        Just (Just White) ->  
+            if testWhitePiece
+                then game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) tile (board game)) }
+                else game
+    where team = fmap getTeam $ getTile (file1, rank1) (board game)
+          testBlackPiece = tile == Queen Black || tile == Rook Black || tile == Knight Black || tile == Bishop Black
+          testWhitePiece = tile == Queen White || tile == Rook White || tile == Knight White || tile == Bishop White
 
 isChecked :: Game -> Bool
 isChecked game
@@ -409,75 +453,75 @@ testBoard = [ testRow1
 
 g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = [], wking = (4, 7), bking = (4, 0)}
 
-b1  = movePiece (1, 6) (1, 4) g1  -- Wpawn avança duas casas 
-b2  = movePiece (2, 7) (0, 5) b1  -- Wbishop avança diag sup esq
-b3  = movePiece (0, 5) (1, 4) b2  -- movimento invalido do Wbishop por peça do mesmo time
-b4  = movePiece (1, 4) (1, 3) b3  -- wpawn avança uma casa
-b5  = movePiece (0, 5) (4, 1) b4  -- wbishop captura (para diag sup dir) bpawn
-b6  = movePiece (4, 1) (7, 4) b5  -- Wbishop move diag inf dir
-b7  = movePiece (7, 4) (6, 5) b6  -- Wbishop move diag inf esq
-b8  = movePiece (5, 0) (1, 4) b7  -- Bbishop move diag inf esq
-b9  = movePiece (1, 4) (4, 7) b8  -- mov inválido do Bbishop por sentido de movimento ocupado
-b10 = movePiece (1, 4) (3, 6) b9  -- Bbishop captura (para diag inf dir) Wpawn
-b11 = movePiece (3, 6) (3, 4) b10 -- mov inválido do Bbishop (vertical)
-b12 = movePiece (6, 5) (0, 5) b11 -- mov inválido do Wbishop (horizontal)
+b1  = movePiece (N (1, 6) (1, 4)) g1  -- Wpawn avança duas casas 
+b2  = movePiece (N (2, 7) (0, 5)) b1  -- Wbishop avança diag sup esq
+b3  = movePiece (N (0, 5) (1, 4)) b2  -- movimento invalido do Wbishop por peça do mesmo time
+b4  = movePiece (N (1, 4) (1, 3)) b3  -- wpawn avança uma casa
+b5  = movePiece (N (0, 5) (4, 1)) b4  -- wbishop captura (para diag sup dir) bpawn
+b6  = movePiece (N (4, 1) (7, 4)) b5  -- Wbishop move diag inf dir
+b7  = movePiece (N (7, 4) (6, 5)) b6  -- Wbishop move diag inf esq
+b8  = movePiece (N (5, 0) (1, 4)) b7  -- Bbishop move diag inf esq
+b9  = movePiece (N (1, 4) (4, 7)) b8  -- mov inválido do Bbishop por sentido de movimento ocupado
+b10 = movePiece (N (1, 4) (3, 6)) b9  -- Bbishop captura (para diag inf dir) Wpawn
+b11 = movePiece (N (3, 6) (3, 4)) b10 -- mov inválido do Bbishop (vertical)
+b12 = movePiece (N (6, 5) (0, 5)) b11 -- mov inválido do Wbishop (horizontal)
 
-r1  = movePiece (0, 6) (0, 4) g1  
-r2  = movePiece (0, 7) (0, 5) r1 -- movimento Wrook vertical cima
-r3  = movePiece (0, 5) (7, 5) r2 -- movimento Wrook horizontal
-r4  = movePiece (7, 5) (7, 1) r3 -- Wrook captura (para cima) Bpawn
-r5  = movePiece (7, 1) (6, 1) r4 -- Wrook captura (para esq) Bpawn
-r6  = movePiece (6, 1) (5, 0) r5 -- mov invalido Wrook diagonal
-r7  = movePiece (6, 1) (6, 4) r6 -- movimento Wrook vertical baixo
-r8  = movePiece (6, 4) (1, 4) r7 -- movimento Wrook horizontal esq
-r9  = movePiece (1, 4) (1, 0) r8 -- mov invalido Wrook por sentido de mov ocupado
+r1  = movePiece (N (0, 6) (0, 4)) g1  
+r2  = movePiece (N (0, 7) (0, 5)) r1 -- movimento Wrook vertical cima
+r3  = movePiece (N (0, 5) (7, 5)) r2 -- movimento Wrook horizontal
+r4  = movePiece (N (7, 5) (7, 1)) r3 -- Wrook captura (para cima) Bpawn
+r5  = movePiece (N (7, 1) (6, 1)) r4 -- Wrook captura (para esq) Bpawn
+r6  = movePiece (N (6, 1) (5, 0)) r5 -- mov invalido Wrook diagonal
+r7  = movePiece (N (6, 1) (6, 4)) r6 -- movimento Wrook vertical baixo
+r8  = movePiece (N (6, 4) (1, 4)) r7 -- movimento Wrook horizontal esq
+r9  = movePiece (N (1, 4) (1, 0)) r8 -- mov invalido Wrook por sentido de mov ocupado
 
-n1  = movePiece (1, 7) (0, 5) g1 -- mov Wknight sup esq
-n2  = movePiece (0, 5) (1, 3) n1 -- mov Wknight sup dir
-n3  = movePiece (1, 3) (2, 1) n2 -- Wknight captura (para direção sup dir) Bpawn
-n4  = movePiece (2, 1) (3, 2) n3 -- movimento invalido Wknight
-n5  = movePiece (2, 1) (3, 3) n4 -- movimento Wknight inf dir
-n6  = movePiece (3, 3) (2, 5) n5 -- movimento Wknight inf esq
-n7  = movePiece (2, 5) (4, 6) n6 -- movimento invalido Wknight por tile ocupado pela mesma cor 
-n8  = movePiece (2, 5) (4, 4) n7 -- movimento Wknight dir sup 
+n1  = movePiece (N (1, 7) (0, 5)) g1 -- mov Wknight sup esq
+n2  = movePiece (N (0, 5) (1, 3)) n1 -- mov Wknight sup dir
+n3  = movePiece (N (1, 3) (2, 1)) n2 -- Wknight captura (para direção sup dir) Bpawn
+n4  = movePiece (N (2, 1) (3, 2)) n3 -- movimento invalido Wknight
+n5  = movePiece (N (2, 1) (3, 3)) n4 -- movimento Wknight inf dir
+n6  = movePiece (N (3, 3) (2, 5)) n5 -- movimento Wknight inf esq
+n7  = movePiece (N (2, 5) (4, 6)) n6 -- movimento invalido Wknight por tile ocupado pela mesma cor 
+n8  = movePiece (N (2, 5) (4, 4)) n7 -- movimento Wknight dir sup 
 
-k1  = movePiece (4, 6) (4, 4) g1  -- mov Wpawn cima
-k2  = movePiece (4, 7) (4, 5) k1  -- mov invalido (pular uma casa) Wking sup 
-k3  = movePiece (4, 7) (4, 6) k2  -- mov Wking cima
-k4  = movePiece (4, 6) (4, 5) k3  -- mov Wking cima
-k5  = movePiece (4, 5) (5, 5) k4  -- mov Wking direita 
-k6  = movePiece (4, 5) (3, 5) k4  -- mov Wking esquerda 
-k7  = movePiece (4, 5) (5, 4) k4  -- mov Wking direita cima
-k8  = movePiece (4, 5) (3, 4) k4  -- mov Wking esquerda cima
-k9  = movePiece (4, 5) (5, 6) k4  -- mov Wking para tile ocupada por mesmo time
-k10 = movePiece (3, 6) (3, 4) k4  -- mov Wpawn cima
-k11 = movePiece (4, 5) (3, 6) k10 -- mov Wking baixo esq
-k12 = movePiece (3, 6) (4, 7) k11 -- mov Wking baixo dir
+k1  = movePiece (N (4, 6) (4, 4)) g1  -- mov Wpawn cima
+k2  = movePiece (N (4, 7) (4, 5)) k1  -- mov invalido (pular uma casa) Wking sup 
+k3  = movePiece (N (4, 7) (4, 6)) k2  -- mov Wking cima
+k4  = movePiece (N (4, 6) (4, 5)) k3  -- mov Wking cima
+k5  = movePiece (N (4, 5) (5, 5)) k4  -- mov Wking direita 
+k6  = movePiece (N (4, 5) (3, 5)) k4  -- mov Wking esquerda 
+k7  = movePiece (N (4, 5) (5, 4)) k4  -- mov Wking direita cima
+k8  = movePiece (N (4, 5) (3, 4)) k4  -- mov Wking esquerda cima
+k9  = movePiece (N (4, 5) (5, 6)) k4  -- mov Wking para tile ocupada por mesmo time
+k10 = movePiece (N (3, 6) (3, 4)) k4  -- mov Wpawn cima
+k11 = movePiece (N (4, 5) (3, 6)) k10 -- mov Wking baixo esq
+k12 = movePiece (N (3, 6) (4, 7)) k11 -- mov Wking baixo dir
 
-c0  = movePiece (2, 6) (2, 4) g1  --mov wpawn
-c1  = movePiece (1, 7) (2, 5) c0  --mov wknight
-c2  = movePiece (1, 6) (1, 4) c1  --mov wpawn
-c3  = movePiece (2, 7) (0, 5) c2  --mov wbishop
-c4  = movePiece (3, 7) (2, 6) c3  --mov wqueen
-c5  = movePiece (6, 6) (6, 4) c4  --mov wpawn
-c6  = movePiece (6, 7) (5, 5) c5  --mov wknight
-c7  = movePiece (5, 7) (7, 5) c6  --mov wbishop
-c8  = movePiece (4, 7) (6, 7) c7  --castle dir 
-c9  = movePiece (4, 7) (2, 7) c7  --castle esq
+c0  = movePiece (N (2, 6) (2, 4)) g1  --mov wpawn
+c1  = movePiece (N (1, 7) (2, 5)) c0  --mov wknight
+c2  = movePiece (N (1, 6) (1, 4)) c1  --mov wpawn
+c3  = movePiece (N (2, 7) (0, 5)) c2  --mov wbishop
+c4  = movePiece (N (3, 7) (2, 6)) c3  --mov wqueen
+c5  = movePiece (N (6, 6) (6, 4)) c4  --mov wpawn
+c6  = movePiece (N (6, 7) (5, 5)) c5  --mov wknight
+c7  = movePiece (N (5, 7) (7, 5)) c6  --mov wbishop
+c8  = movePiece (N (4, 7) (6, 7)) c7  --castle dir 
+c9  = movePiece (N (4, 7) (2, 7)) c7  --castle esq
 
-e1 = movePiece (1, 6) (1, 4) g1  
-e2 = movePiece (2, 1) (2, 3) e1
-e3 = movePiece (1, 4) (1, 3) e2
-e4 = movePiece (0, 1) (0, 3) e3
-e5 = movePiece (1, 3) (2, 2) e4  -- mov invalido (peão a ser capturado não havia se movido na jogada anterior)
-e6 = movePiece (1, 3) (0, 2) e4  -- en passant certo
-e7 = movePiece (2, 3) (2, 4) e6  
-e8 = movePiece (3, 6) (3, 4) e7  
-e9 = movePiece (2, 4) (3, 5) e8  -- en passant certo
+e1 = movePiece (N (1, 6) (1, 4)) g1  
+e2 = movePiece (N (2, 1) (2, 3)) e1
+e3 = movePiece (N (1, 4) (1, 3)) e2
+e4 = movePiece (N (0, 1) (0, 3)) e3
+e5 = movePiece (N (1, 3) (2, 2)) e4  -- mov invalido (peão a ser capturado não havia se movido na jogada anterior)
+e6 = movePiece (N (1, 3) (0, 2)) e4  -- en passant certo
+e7 = movePiece (N (2, 3) (2, 4)) e6  
+e8 = movePiece (N (3, 6) (3, 4)) e7  
+e9 = movePiece (N (2, 4) (3, 5)) e8  -- en passant certo
 
-pp1 = movePiece (1, 0) (2, 2) e8
-pp2 = movePiece (0, 2) (0, 1) pp1
-pp3 = movePiece (0, 0) (1, 0) pp2
-pp4 = movePiece (0, 1) (0, 0) pp3 -- promoção de peão avançando uma casa
-pp5 = movePiece (0, 1) (1, 0) pp3 -- promoção de peão capturando peça
-pp6 = movePiece (1, 0) (0, 0) pp5
+pp1 = movePiece (N (1, 0) (2, 2)) e8
+pp2 = movePiece (N (0, 2) (0, 1)) pp1
+pp3 = movePiece (N (0, 0) (1, 0)) pp2
+pp4 = movePiece (N (0, 1) (0, 0)) pp3 -- promoção de peão avançando uma casa
+pp5 = movePiece (PP (0, 1) (1, 0) (Bishop White)) pp3 -- promoção de peão capturando peça
+pp6 = movePiece (N (1, 0) (0, 0)) pp5
