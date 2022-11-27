@@ -47,6 +47,7 @@ data Game = Game { board :: Board
                  , movesList :: [Move]
                  , wking :: Coord
                  , bking :: Coord
+                 , fiftyMovesCounter :: Int
                  }
         deriving ( Show ) 
 
@@ -83,19 +84,31 @@ setTile' x t (y:ys) = y : setTile' (x-1) t ys
 movePiece :: Move -> Game -> Game
 movePiece (N (file1, rank1) (file2, rank2)) game =
     if canMove' && not isPP
-        then newgame { movesList = m : ms
-                     , turn = turn' + 1}
+        then 
+            if isPawnMove || isCapture 
+                then 
+                    newgame { movesList = m : ms
+                            , turn = turn' + 1
+                            , fiftyMovesCounter = 0 }
+                else
+                    newgame { movesList = m : ms
+                            , turn = turn' + 1
+                            , fiftyMovesCounter = counter + 1 }
         else game
-    where newgame  = movePiece' (N (file1, rank1) (file2, rank2)) game
-          canMove' = canMove (file1, rank1) (file2, rank2) game 
-          m        = N (file1,rank1) (file2, rank2)
-          ms       = movesList newgame
-          turn'    = turn newgame
-          isPP     = ((getTile (file1, rank1) (board game)) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) (board game)) == Just (Pawn White) && rank1 == 1)
+    where newgame    = movePiece' (N (file1, rank1) (file2, rank2)) game
+          canMove'   = canMove (file1, rank1) (file2, rank2) game 
+          m          = N (file1,rank1) (file2, rank2)
+          ms         = movesList newgame
+          turn'      = turn newgame
+          counter    = fiftyMovesCounter newgame
+          isPP       = ((getTile (file1, rank1) (board game)) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) (board game)) == Just (Pawn White) && rank1 == 1)
+          isPawnMove = getTile (file1, rank1) (board game) == Just (Pawn White) || getTile (file1, rank1) (board game) == Just (Pawn Black)
+          isCapture  = getTile (file2, rank2) (board game) /= Just Empty
 movePiece (PP (file1, rank1) (file2, rank2) tile) game =
     if canMove' && isPP
         then newgame { movesList = m : ms
-                     , turn = turn' + 1}
+                     , turn = turn' + 1
+                     , fiftyMovesCounter = 0 }
         else game
     where newgame  = movePiece' (PP (file1, rank1) (file2, rank2) tile) game
           canMove' = canMove (file1, rank1) (file2, rank2) game 
@@ -451,7 +464,7 @@ testBoard = [ testRow1
             , testRow7
             , testRow8 ] 
 
-g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = [], wking = (4, 7), bking = (4, 0)}
+g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = [], wking = (4, 7), bking = (4, 0), fiftyMovesCounter = 0 }
 
 b1  = movePiece (N (1, 6) (1, 4)) g1  -- Wpawn avança duas casas 
 b2  = movePiece (N (2, 7) (0, 5)) b1  -- Wbishop avança diag sup esq
@@ -525,3 +538,10 @@ pp3 = movePiece (N (0, 0) (1, 0)) pp2
 pp4 = movePiece (N (0, 1) (0, 0)) pp3 -- promoção de peão avançando uma casa
 pp5 = movePiece (PP (0, 1) (1, 0) (Bishop White)) pp3 -- promoção de peão capturando peça
 pp6 = movePiece (N (1, 0) (0, 0)) pp5
+
+t1 = movePiece (N (1, 0) (2, 2)) e8
+t2 = movePiece (N (1, 7) (2, 5)) t1
+t3 = movePiece (N (0, 0) (1, 0)) t2
+t4 = movePiece (N (3, 7) (3, 5)) t3
+t5 = movePiece (N (3, 0) (0, 3)) t4
+t6 = movePiece (N (3, 5) (2, 4)) t5
