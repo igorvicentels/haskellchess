@@ -43,8 +43,8 @@ data Game = Game { board :: Board
                  , turn :: Int
                  , castle :: Castle
                  , movesList :: [Move]
-                 , wking :: (Int, Int)
-                 , bking :: (Int, Int)
+                 , wking :: Coord
+                 , bking :: Coord
                  }
         deriving ( Show ) 
 
@@ -370,10 +370,7 @@ enPassant (file1, rank1) (file2, rank2) Black game =
 
 pawnPromotion :: Coord -> Coord -> Tile -> Game -> Game
 pawnPromotion (file1, rank1) (file2, rank2) t game = 
-    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) t (board game))
-         , movesList = ((file1, rank1), (file2,rank2)) : movesList game
-         , turn = (turn game) + 1 }
-
+    game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) t (board game)) }
 
 isChecked :: Game -> Bool
 isChecked game
@@ -483,3 +480,4 @@ pp2 = movePiece (0, 2) (0, 1) pp1
 pp3 = movePiece (0, 0) (1, 0) pp2
 pp4 = movePiece (0, 1) (0, 0) pp3 -- promoção de peão avançando uma casa
 pp5 = movePiece (0, 1) (1, 0) pp3 -- promoção de peão capturando peça
+pp6 = movePiece (1, 0) (0, 0) pp5
