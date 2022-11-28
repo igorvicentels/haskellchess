@@ -1,6 +1,7 @@
 module Board where
 
 import Data.Maybe
+import Data.List
 
 data Team = Black
           | White
@@ -48,6 +49,7 @@ data Game = Game { board :: Board
                  , wking :: Coord
                  , bking :: Coord
                  , fiftyMovesCounter :: Int
+                 , boards :: [Board] 
                  }
         deriving ( Show ) 
 
@@ -73,6 +75,16 @@ getTile (file, rank) b
     | rank < 0 || file < 0 || rank > 7 || file > 7 = Nothing
     | otherwise                        = Just $ b !! rank !! file
 
+getTeam :: Tile -> Maybe Team
+getTeam Empty          = Nothing
+getTeam (Pawn White)   = Just White
+getTeam (Rook White)   = Just White
+getTeam (Bishop White) = Just White
+getTeam (Knight White) = Just White
+getTeam (Queen White)  = Just White
+getTeam (King White)   = Just White
+getTeam _              = Just Black
+
 setTile :: Coord -> Tile -> Board -> Board
 setTile (file, 0) t (r:rs) = setTile' file t r : rs
 setTile (file, rank) t (r:rs) = r : setTile (file, rank - 1) t rs 
@@ -89,11 +101,14 @@ movePiece (N (file1, rank1) (file2, rank2)) game =
                 then 
                     newgame { movesList = m : ms
                             , turn = turn' + 1
-                            , fiftyMovesCounter = 0 }
+                            , fiftyMovesCounter = 0
+                            , boards = [] }
                 else
                     newgame { movesList = m : ms
                             , turn = turn' + 1
-                            , fiftyMovesCounter = counter + 1 }
+                            , fiftyMovesCounter = counter + 1 
+                            , boards = board newgame : boards newgame
+                            }
         else game
     where newgame    = movePiece' (N (file1, rank1) (file2, rank2)) game
           canMove'   = canMove (file1, rank1) (file2, rank2) game 
@@ -108,7 +123,8 @@ movePiece (PP (file1, rank1) (file2, rank2) tile) game =
     if canMove' && isPP
         then newgame { movesList = m : ms
                      , turn = turn' + 1
-                     , fiftyMovesCounter = 0 }
+                     , fiftyMovesCounter = 0 
+                     , boards = [] }
         else game
     where newgame  = movePiece' (PP (file1, rank1) (file2, rank2) tile) game
           canMove' = canMove (file1, rank1) (file2, rank2) game 
@@ -519,16 +535,13 @@ anyMoveLineAux (file, rank) (file2, rank2) game = insideTable && (canMove' || ne
 anyMoveQueen :: Coord -> Game -> Bool
 anyMoveQueen (file, rank) game = anyMoveBishop (file, rank) game || anyMoveRook (file, rank) game
 
-getTeam :: Tile -> Maybe Team
-getTeam Empty          = Nothing
-getTeam (Pawn White)   = Just White
-getTeam (Rook White)   = Just White
-getTeam (Bishop White) = Just White
-getTeam (Knight White) = Just White
-getTeam (Queen White)  = Just White
-getTeam (King White)   = Just White
-getTeam _              = Just Black
+countBoards :: [Board] -> [(Int, Board)]
+countBoards []     = []
+countBoards (x:xs) = (length us, x) : countBoards vs
+        where (us, vs) = partition (==x) (x:xs)
 
+isThreeRepetitions :: Game -> Bool
+isThreeRepetitions game = (maximum . map fst) (countBoards (boards game)) == 3
 
 testRow1 = [Rook Black, Knight Black, Bishop Black, Queen Black, King Black, Bishop Black, Knight Black, Rook Black]
 testRow2 = [Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black]
@@ -548,7 +561,7 @@ testBoard = [ testRow1
             , testRow7
             , testRow8 ] 
 
-g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = [], wking = (4, 7), bking = (4, 0), fiftyMovesCounter = 0 }
+g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = [], wking = (4, 7), bking = (4, 0), fiftyMovesCounter = 0, boards = [board g1]}
 
 b1  = movePiece (N (1, 6) (1, 4)) g1  -- Wpawn avança duas casas 
 b2  = movePiece (N (2, 7) (0, 5)) b1  -- Wbishop avança diag sup esq
@@ -629,3 +642,12 @@ t3 = movePiece (N (0, 0) (1, 0)) t2
 t4 = movePiece (N (3, 7) (3, 5)) t3
 t5 = movePiece (N (3, 0) (0, 3)) t4
 t6 = movePiece (N (3, 5) (2, 4)) t5
+
+rep1 = movePiece (N (1,7) (0, 5)) g1
+rep2 = movePiece (N (1,0) (0, 2)) rep1
+rep3 = movePiece (N (0,5) (1, 7)) rep2
+rep4 = movePiece (N (0,2) (1, 0)) rep3
+rep5 = movePiece (N (1,7) (0, 5)) rep4
+rep6 = movePiece (N (1,0) (0, 2)) rep5
+rep7 = movePiece (N (0,5) (1, 7)) rep6
+rep8 = movePiece (N (0,2) (1, 0)) rep7
