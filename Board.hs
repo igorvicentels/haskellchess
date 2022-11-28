@@ -210,6 +210,7 @@ moveEnPassant :: Coord -> Coord -> Team -> Board -> Board
 moveEnPassant (file1, rank1) (file2, rank2) c b = setTile (file1, rank1) Empty (setTile (file2, rank1) Empty (setTile (file2, rank2) (Pawn c) b))
 
     -- TODO: Check if tile 2 is inside the board
+    -- TODO: Refactor this function
 canMove :: Coord -> Coord -> Game -> Bool
 canMove (file1, rank1) (file2, rank2) game
     | (rank1 == rank2) && (file1 == file2) = False
@@ -399,14 +400,15 @@ isAttackedByKnight (file, rank) (Just Black) b =
     getTile (file - 1, rank + 2) b == Just (Knight White) ||
     getTile (file + 1, rank + 2) b == Just (Knight White)
 
-
+--TODO: Refactor this function
 canMakeCastle :: Coord -> Coord -> Team -> Game -> Bool
 canMakeCastle (file1, rank1) (file2, rank2) c game
+    | isChecked game                               = False
     | rank1 /= rank2 || (rank1 /= 0 && rank1 /= 7) = False
-    | file1 == 4 && file2 == 2 && rank1 == 0    = m1 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
-    | file1 == 4 && file2 == 6 && rank1 == 0    = m2 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
-    | file1 == 4 && file2 == 2 && rank1 == 7    = m3 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
-    | file1 == 4 && file2 == 6 && rank1 == 7    = m4 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
+    | file1 == 4 && file2 == 2 && rank1 == 0       = m1 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
+    | file1 == 4 && file2 == 6 && rank1 == 0       = m2 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
+    | file1 == 4 && file2 == 2 && rank1 == 7       = m3 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
+    | file1 == 4 && file2 == 6 && rank1 == 7       = m4 && canMakeCastle' (file1, rank1) (file2, rank2) c game 
     | otherwise                        = False
     where (m1,m2,m3,m4) = castle game
 
@@ -543,23 +545,17 @@ countBoards (x:xs) = (length us, x) : countBoards vs
 isThreeRepetitions :: Game -> Bool
 isThreeRepetitions game = (maximum . map fst) (countBoards (boards game)) == 3
 
-testRow1 = [Rook Black, Knight Black, Bishop Black, Queen Black, King Black, Bishop Black, Knight Black, Rook Black]
-testRow2 = [Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black, Pawn Black]
-testRow3 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
-testRow4 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
-testRow5 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
-testRow6 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
-testRow7 = [Pawn White, Pawn White, Pawn White, Pawn White, Pawn White, Pawn White, Pawn White, Pawn White]
-testRow8 = [Rook White, Knight White, Bishop White, Queen White, King White, Bishop White, Knight White, Rook White]
+initFst   = replicate 8 Pawn
+initSnd   = [Rook, Knight, Bishop, Queen, King, Bishop, Knight, Rook]
+initEmpty = replicate 8 Empty
 
-testBoard = [ testRow1
-            , testRow2
-            , testRow3
-            , testRow4
-            , testRow5
-            , testRow6
-            , testRow7
-            , testRow8 ] 
+testBoard =
+  [ fmap ($ White) initSnd
+  , fmap ($ White) initFst
+  ] ++ replicate 4 initEmpty ++
+  [ fmap ($ Black) initFst
+  , fmap ($ Black) initSnd
+  ]
 
 g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = [], wking = (4, 7), bking = (4, 0), fiftyMovesCounter = 0, boards = [board g1]}
 
