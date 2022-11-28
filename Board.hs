@@ -102,7 +102,7 @@ movePiece (N (file1, rank1) (file2, rank2)) game =
                     newgame { movesList = m : ms
                             , turn = turn' + 1
                             , fiftyMovesCounter = 0
-                            , boards = [] }
+                            , boards = [board newgame] }
                 else
                     newgame { movesList = m : ms
                             , turn = turn' + 1
