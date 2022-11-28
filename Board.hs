@@ -50,6 +50,7 @@ data Game = Game { board :: Board
                  , bking :: Coord
                  , fiftyMovesCounter :: Int
                  , boards :: [Board] 
+                 , pieceList :: [(Int, Tile)]
                  }
         deriving ( Show ) 
 
@@ -93,22 +94,35 @@ setTile' :: Int -> Tile -> [Tile] -> [Tile]
 setTile' 0 t (y:ys) = t : ys
 setTile' x t (y:ys) = y : setTile' (x-1) t ys
 
+newPieceList :: Coord -> Game -> [(Int, Tile)]
+newPieceList (file, rank) game = go (getTile (file, rank) (board game)) (pieceList game)
+    where go _ []            = []
+          go (Just piece) (x:xs) = if snd x == piece then (fst x - 1, snd x) : go (Just piece) xs else x : go (Just piece) xs 
+
 movePiece :: Move -> Game -> Game
 movePiece (N (file1, rank1) (file2, rank2)) game =
     if canMove' && not isPP
         then 
-            if isPawnMove || isCapture 
+            if isCapture 
                 then 
                     newgame { movesList = m : ms
                             , turn = turn' + 1
                             , fiftyMovesCounter = 0
-                            , boards = [board newgame] }
+                            , boards = [board newgame]
+                            , pieceList = newPieceList (file2, rank2) game}
                 else
-                    newgame { movesList = m : ms
+                    if isPawnMove
+                        then
+                            newgame { movesList = m : ms
                             , turn = turn' + 1
-                            , fiftyMovesCounter = counter + 1 
-                            , boards = board newgame : boards newgame
-                            }
+                            , fiftyMovesCounter = 0
+                            , boards = [board newgame] }
+                        else
+                            newgame { movesList = m : ms
+                                    , turn = turn' + 1
+                                    , fiftyMovesCounter = counter + 1 
+                                    , boards = board newgame : boards newgame
+                                    }
         else game
     where newgame    = movePiece' (N (file1, rank1) (file2, rank2)) game
           canMove'   = canMove (file1, rank1) (file2, rank2) game 
@@ -561,7 +575,16 @@ testBoard = [ testRow1
             , testRow7
             , testRow8 ] 
 
-g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = [], wking = (4, 7), bking = (4, 0), fiftyMovesCounter = 0, boards = [board g1]}
+g1 = Game { board = testBoard
+          , turn = 1
+          , castle = (True, True, True, True)
+          , movesList = []
+          , wking = (4, 7)
+          , bking = (4, 0)
+          , fiftyMovesCounter = 0
+          , boards = [board g1]
+          , pieceList = [(8, Pawn White), (2, Rook White), (2, Knight White), (2, Bishop White), (1, Queen White), (1, King White), (8, Pawn Black), (2, Rook Black), (2, Knight Black), (2, Bishop Black), (1, Queen Black), (1, King Black)]
+          }
 
 b1  = movePiece (N (1, 6) (1, 4)) g1  -- Wpawn avança duas casas 
 b2  = movePiece (N (2, 7) (0, 5)) b1  -- Wbishop avança diag sup esq
@@ -642,6 +665,8 @@ t3 = movePiece (N (0, 0) (1, 0)) t2
 t4 = movePiece (N (3, 7) (3, 5)) t3
 t5 = movePiece (N (3, 0) (0, 3)) t4
 t6 = movePiece (N (3, 5) (2, 4)) t5
+t7 = movePiece (N (2, 2) (3, 4)) t6
+t8 = movePiece (N (2, 4) (2, 0)) t7
 
 rep1 = movePiece (N (1,7) (0, 5)) g1
 rep2 = movePiece (N (1,0) (0, 2)) rep1
