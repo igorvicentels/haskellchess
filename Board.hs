@@ -116,9 +116,11 @@ movePiece (N (file1, rank1) (file2, rank2)) game =
           ms         = movesList newgame
           turn'      = turn newgame
           counter    = fiftyMovesCounter newgame
-          isPP       = ((getTile (file1, rank1) (board game)) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) (board game)) == Just (Pawn White) && rank1 == 1)
-          isPawnMove = getTile (file1, rank1) (board game) == Just (Pawn White) || getTile (file1, rank1) (board game) == Just (Pawn Black)
-          isCapture  = getTile (file2, rank2) (board game) /= Just Empty
+          isPP       = ((getTile (file1, rank1) b) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) b) == Just (Pawn White) && rank1 == 1)
+          isPawnMove = getTile (file1, rank1) b == Just (Pawn White) || getTile (file1, rank1) b == Just (Pawn Black)
+          isCapture  = getTile (file2, rank2) b /= Just Empty  || enPassant (file1, rank1) (file2, rank2) (fromJust (fromJust team)) game
+          team       = fmap getTeam (getTile (file1, rank1) b)
+          b          = board game
 movePiece (PP (file1, rank1) (file2, rank2) tile) game =
     if canMove' && isPP
         then newgame { movesList = m : ms
@@ -142,19 +144,42 @@ movePiece' (N (file1, rank1) (file2, rank2)) game =
                 then
                     if c == Black
                         then
-                            game { board = movePiecesinCastle (file1, rank1) (file2, rank2) c b
-                                 , bking = (file2, rank2)}
+                            game { board  = movePiecesinCastle (file1, rank1) (file2, rank2) c b
+                                 , castle = (False, False, m3, m4)
+                                 , bking  = (file2, rank2)}                            
                         else
                             game { board = movePiecesinCastle (file1, rank1) (file2, rank2) c b
+                                 , castle = (m1, m2, False, False)
                                  , wking = (file2, rank2)}
                 else
                     if c == Black
                         then
                             game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (King c) b)
+                                 , castle = (False, False, m3, m4)
                                  , bking = (file2, rank2)}
                         else
                             game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (King c) b)
+                                 , castle = (m1, m2, False, False)
                                  , wking = (file2, rank2)}
+        
+        Just (Rook c) -> 
+            if c == Black
+                then
+                    if file1 == 0
+                        then
+                            game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Rook c) b)
+                                 , castle = (False, m2, m3, m4)}
+                        else
+                            game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Rook c) b)
+                                 , castle = (m1, False, m3, m4)}
+                else
+                    if file1 == 0
+                        then
+                            game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Rook c) b)
+                                 , castle = (m1, m2, False, m4)}
+                        else
+                            game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) (Rook c) b)
+                                 , castle = (m1, m2, m3, False)}
 
         Just (Pawn White) ->
             if (rank1 == 3 && abs (file1 - file2) == 1 && getTile (file2, rank2) b == Just Empty) 
@@ -180,6 +205,7 @@ movePiece' (N (file1, rank1) (file2, rank2)) game =
         Just t' -> game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) t' b)}
     where t = getTile (file1, rank1) b 
           b = board game
+          (m1, m2, m3, m4) = castle game
 movePiece' (PP (file1, rank1) (file2, rank2) tile) game =
     case t of
         Just (Pawn White) ->
@@ -210,14 +236,11 @@ moveEnPassant :: Coord -> Coord -> Team -> Board -> Board
 moveEnPassant (file1, rank1) (file2, rank2) c b = setTile (file1, rank1) Empty (setTile (file2, rank1) Empty (setTile (file2, rank2) (Pawn c) b))
 
     -- TODO: Check if tile 2 is inside the board
-    -- TODO: Refactor this function
 canMove :: Coord -> Coord -> Game -> Bool
-canMove (file1, rank1) (file2, rank2) game
-    | (rank1 == rank2) && (file1 == file2) = False
-    | team1 == team2           = False
-    | not isPlayerTurn         = False
-    | otherwise = canMovePiece && not(isChecked newgame)        
-    where team1 = fmap getTeam (getTile (file1, rank1) b)
+canMove (file1, rank1) (file2, rank2) game = difTile && difTeam && isPlayerTurn && canMovePiece && not(isChecked newgame)
+    where difTile = (rank1 /= rank2) || (file1 /= file2)
+          difTeam = team1 /= team2 
+          team1 = fmap getTeam (getTile (file1, rank1) b)
           team2 = fmap getTeam (getTile (file2, rank2) b)
           b = board game
           turn' = turn game
@@ -233,7 +256,6 @@ canMove (file1, rank1) (file2, rank2) game
                 Just (Queen  c) -> canMoveQueen (file1, rank1) (file2, rank2) c b
                 Just (King   c) -> canMoveKing (file1, rank1) (file2, rank2) c b || canMakeCastle (file1, rank1) (file2, rank2) c game  
           newgame = movePiece' (N (file1, rank1) (file2, rank2)) game
-
 
 canMovePawn :: Coord -> Coord -> Team -> Board -> Bool
 canMovePawn (file1, rank1) (file2, rank2) c b =
@@ -258,65 +280,32 @@ canMovePawn (file1, rank1) (file2, rank2) c b =
                         Just Black -> rank1 - rank2 == 1 && abs (file1 - file2) == 1
 
 canMoveRook :: Coord -> Coord -> Team -> Board -> Bool
-canMoveRook (file1, rank1) (file2, rank2) c b
-    | (rank1 == rank2) && (file1 == file2) = True
-    | (rank1 == rank2) = 
-        if (file1 < file2)
-            then
-                case getTile (file1 + 1, rank1) b of 
-                    Nothing -> False
-                    Just Empty -> canMoveRook (file1 + 1, rank1) (file2, rank2) c b
-                    Just x     -> (file1 + 1) == file2 
-            else
-                case getTile (file1 - 1, rank1) b of 
-                    Nothing -> False
-                    Just Empty -> canMoveRook (file1 - 1, rank1) (file2, rank2) c b
-                    Just x     -> (file1 - 1) == file2
-    | (file1 == file2) = 
-        if (rank1 < rank2)
-            then 
-                case getTile (file1, rank1 + 1) b of 
-                    Nothing -> False
-                    Just Empty -> canMoveRook (file1, rank1 + 1) (file2, rank2) c b
-                    Just x     -> (rank1 + 1) == rank2
-            else 
-                case getTile (file1, rank1 - 1) b of 
-                    Nothing -> False
-                    Just Empty -> canMoveRook (file1, rank1 - 1) (file2, rank2) c b
-                    Just x     -> (rank1 - 1) == rank2  
-    | otherwise = False
+canMoveRook (file1, rank1) (file2, rank2) c b = sameTile || (lineMove && nextTile)
+    where sameTile = (rank1 == rank2) && (file1 == file2)
+          fileDif  = file2 - file1
+          rankDif  = rank2 - rank1
+          lineMove = (abs(fileDif) == 0 && abs(rankDif) > 0) || (abs(fileDif) > 0 && abs(rankDif) == 0)
+          file_i   = if fileDif == 0 then 0 else (if fileDif < 0 then -1 else 1)
+          rank_i   = if rankDif == 0 then 0 else (if rankDif < 0 then -1 else 1)
+          nextTile =
+            case getTile (file1 + file_i, rank1 + rank_i) b of 
+                Nothing -> False
+                Just Empty -> canMoveRook (file1 + file_i, rank1 + rank_i) (file2, rank2) c b
+                Just x     -> (file1 + file_i, rank1 + rank_i) == (file2, rank2)
 
 canMoveBishop :: Coord -> Coord -> Team -> Board -> Bool
-canMoveBishop (file1, rank1) (file2, rank2) c b
-    | (rank1 == rank2) && (file1 == file2) = True
-    | abs(rank1 - rank2) /= abs(file1 - file2) = False
-    | otherwise = 
-        if (file1 < file2) 
-            then
-                if (rank1 < rank2)
-                    then
-                        case getTile (file1 + 1, rank1 + 1) b of 
-                            Nothing -> False
-                            Just Empty -> canMoveBishop (file1 + 1, rank1 + 1) (file2, rank2) c b
-                            Just x     -> (file1 + 1, rank1 + 1) == (file2, rank2) 
-                    else 
-                        case getTile (file1 + 1, rank1 - 1) b of 
-                            Nothing -> False
-                            Just Empty -> canMoveBishop (file1 + 1, rank1 - 1) (file2, rank2) c b
-                            Just x     -> (file1 + 1, rank1 - 1) == (file2, rank2)
-            else
-                if (rank1 < rank2)
-                    then 
-                        case getTile (file1 - 1, rank1 + 1) b of 
-                            Nothing -> False
-                            Just Empty -> canMoveBishop (file1 - 1, rank1 + 1) (file2, rank2) c b
-                            Just x     -> (file1 - 1, rank1 + 1) == (file2, rank2) 
-                    else 
-                        case getTile (file1 - 1, rank1 - 1) b of 
-                            Nothing -> False
-                            Just Empty -> canMoveBishop (file1 - 1, rank1 - 1) (file2, rank2) c b
-                            Just x     -> (file1 - 1, rank1 - 1) == (file2, rank2)
-
+canMoveBishop (file1, rank1) (file2, rank2) c b = sameTile || (diagMove && nextTile)
+    where sameTile = (rank1 == rank2) && (file1 == file2)
+          diagMove = abs(rank1 - rank2) == abs(file1 - file2)
+          fileDif  = file2 - file1
+          rankDif  = rank2 - rank1
+          file_i = if fileDif < 0 then -1 else 1
+          rank_i = if rankDif < 0 then -1 else 1
+          nextTile = 
+            case getTile (file1 + file_i, rank1 + rank_i) b of 
+                Nothing    -> False
+                Just Empty -> canMoveBishop (file1 + file_i, rank1 + rank_i) (file2, rank2) c b
+                Just x     -> (file1 + file_i, rank1 + rank_i) == (file2, rank2)
 
 canMoveQueen :: Coord -> Coord -> Team -> Board -> Bool
 canMoveQueen (file1, rank1) (file2, rank2) c b = canMoveBishop (file1, rank1) (file2, rank2) c b || canMoveRook (file1, rank1) (file2, rank2) c b
@@ -448,9 +437,7 @@ pawnPromotion (PP (file1, rank1) (file2, rank2) tile) game =
           testWhitePiece = tile == Queen White || tile == Rook White || tile == Knight White || tile == Bishop White
 
 isChecked :: Game -> Bool
-isChecked game
-    | even (turn game) = isAttacked (bking game) (board game)
-    | otherwise = isAttacked (wking game) (board game)
+isChecked game = (even (turn game) && isAttacked (bking game) (board game)) || (odd (turn game) && isAttacked (wking game) (board game))
 
 isCheckmate :: Game -> Bool
 isCheckmate game = isChecked game && not(anyMove game) 
@@ -550,11 +537,11 @@ initSnd   = [Rook, Knight, Bishop, Queen, King, Bishop, Knight, Rook]
 initEmpty = replicate 8 Empty
 
 testBoard =
-  [ fmap ($ White) initSnd
-  , fmap ($ White) initFst
+  [ fmap ($ Black) initSnd
+  , fmap ($ Black) initFst
   ] ++ replicate 4 initEmpty ++
-  [ fmap ($ Black) initFst
-  , fmap ($ Black) initSnd
+  [ fmap ($ White) initFst
+  , fmap ($ White) initSnd
   ]
 
 g1 = Game {board = testBoard, turn = 1, castle = (True, True, True, True), movesList = [], wking = (4, 7), bking = (4, 0), fiftyMovesCounter = 0, boards = [board g1]}
@@ -644,6 +631,6 @@ rep2 = movePiece (N (1,0) (0, 2)) rep1
 rep3 = movePiece (N (0,5) (1, 7)) rep2
 rep4 = movePiece (N (0,2) (1, 0)) rep3
 rep5 = movePiece (N (1,7) (0, 5)) rep4
-rep6 = movePiece (N (1,0) (0, 2)) rep5
+rep6 = movePiece (N (1,0) (0, 2)) rep5 
 rep7 = movePiece (N (0,5) (1, 7)) rep6
 rep8 = movePiece (N (0,2) (1, 0)) rep7
