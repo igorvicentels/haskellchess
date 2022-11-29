@@ -50,7 +50,7 @@ data Game = Game { board :: Board
                  , bking :: Coord
                  , fiftyMovesCounter :: Int
                  , boards :: [Board] 
-                 , pieceList :: [Tile]
+                 , pieceList :: [(Int, Tile)]
                  }
         deriving ( Show ) 
 
@@ -94,51 +94,35 @@ setTile' :: Int -> Tile -> [Tile] -> [Tile]
 setTile' 0 t (y:ys) = t : ys
 setTile' x t (y:ys) = y : setTile' (x-1) t ys
 
-newPieceList :: Coord -> Game -> [Tile]
-newPieceList (file, rank) game   = go (getTile (file, rank) (board game)) (pieceList game) 
-    where go _            []     = []
-          go (Just piece) (x:xs) = if x == piece then xs else x : go (Just piece) xs
-
-newPieceListPP :: Coord -> Coord -> Tile -> Game -> [Tile]
-newPieceListPP coord1 coord2 tile game = tile : (pieceList deleteCaptured) 
-    where deletePawn = game { pieceList = newPieceList coord1 game}
-          deleteCaptured = deletePawn { pieceList = newPieceList coord2 deletePawn }
+newPieceList :: Coord -> Game -> [(Int, Tile)]
+newPieceList (file, rank) game = go (getTile (file, rank) (board game)) (pieceList game)
+    where go _ []            = []
+          go (Just piece) (x:xs) = if snd x == piece then (fst x - 1, snd x) : go (Just piece) xs else x : go (Just piece) xs 
 
 movePiece :: Move -> Game -> Game
 movePiece (N (file1, rank1) (file2, rank2)) game =
     if canMove' && not isPP
         then 
-            if enPassant' 
-                then
+            if isCapture 
+                then 
                     newgame { movesList = m : ms
                             , turn = turn' + 1
                             , fiftyMovesCounter = 0
                             , boards = [board newgame]
-                            , pieceList = if team == White 
-                                            then newPieceList (file2, rank2 + 1) game 
-                                            else newPieceList (file2, rank2 - 1) game
-                            }
+                            , pieceList = newPieceList (file2, rank2) game}
                 else
-                    if isCapture 
-                        then 
+                    if isPawnMove
+                        then
+                            newgame { movesList = m : ms
+                            , turn = turn' + 1
+                            , fiftyMovesCounter = 0
+                            , boards = [board newgame] }
+                        else
                             newgame { movesList = m : ms
                                     , turn = turn' + 1
-                                    , fiftyMovesCounter = 0
-                                    , boards = [board newgame]
-                                    , pieceList = newPieceList (file2, rank2) game}
-                        else
-                            if isPawnMove
-                                then
-                                    newgame { movesList = m : ms
-                                    , turn = turn' + 1
-                                    , fiftyMovesCounter = 0
-                                    , boards = [board newgame] }
-                                else
-                                    newgame { movesList = m : ms
-                                            , turn = turn' + 1
-                                            , fiftyMovesCounter = counter + 1 
-                                            , boards = board newgame : boards newgame
-                                            }
+                                    , fiftyMovesCounter = counter + 1 
+                                    , boards = board newgame : boards newgame
+                                    }
         else game
     where newgame    = movePiece' (N (file1, rank1) (file2, rank2)) game
           canMove'   = canMove (file1, rank1) (file2, rank2) game 
@@ -148,17 +132,15 @@ movePiece (N (file1, rank1) (file2, rank2)) game =
           counter    = fiftyMovesCounter newgame
           isPP       = ((getTile (file1, rank1) b) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) b) == Just (Pawn White) && rank1 == 1)
           isPawnMove = getTile (file1, rank1) b == Just (Pawn White) || getTile (file1, rank1) b == Just (Pawn Black)
-          isCapture  = getTile (file2, rank2) b /= Just Empty 
-          team       = if odd (turn game) then White else Black
+          isCapture  = getTile (file2, rank2) b /= Just Empty  || enPassant (file1, rank1) (file2, rank2) (fromJust (fromJust team)) game
+          team       = fmap getTeam (getTile (file1, rank1) b)
           b          = board game
-          enPassant' = enPassant (file1, rank1) (file2, rank2) team game
 movePiece (PP (file1, rank1) (file2, rank2) tile) game =
     if canMove' && isPP
         then newgame { movesList = m : ms
                      , turn = turn' + 1
                      , fiftyMovesCounter = 0 
-                     , boards = [] 
-                     , pieceList = newPieceListPP (file1, rank1) (file2, rank2) tile game }
+                     , boards = [] }
         else game
     where newgame  = movePiece' (PP (file1, rank1) (file2, rank2) tile) game
           canMove' = canMove (file1, rank1) (file2, rank2) game 
@@ -166,8 +148,6 @@ movePiece (PP (file1, rank1) (file2, rank2) tile) game =
           ms       = movesList newgame
           turn'    = turn newgame
           isPP     = ((getTile (file1, rank1) (board game)) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) (board game)) == Just (Pawn White) && rank1 == 1)
-          isCapture  = getTile (file2, rank2) b /= Just Empty
-          b          = board game
 
 movePiece' :: Move -> Game -> Game
 movePiece' (N (file1, rank1) (file2, rank2)) game = 
@@ -568,18 +548,13 @@ isThreeRepetitions game = (maximum . map fst) (countBoards (boards game)) == 3
 
 isInsufficientMaterial :: Game -> Bool
 isInsufficientMaterial game = noPawnsLeft || onlyOneBishopLeft || oneBishopOnEachTeamOnTilesOfSameColor
-    where list              = pieceList game
+    where list              = pieceList' (pieceList game) 
           pieceList' []     = []
           pieceList' (x:xs) = replicate (fst x) (snd x) ++ pieceList' xs
           noPawnsLeft       = length (filter (\x -> x == Pawn Black || x == Pawn White) list) == 0 
           onlyOneBishopLeft = length list == 3 && union list [Rook White, Rook Black, Queen White, Queen Black] == []
           oneBishopOnEachTeamOnTilesOfSameColor = length list == 4 && length (filter (== Bishop White) list) == 1 && length (filter (== Bishop Black) list) == 1
           -- TODO: check if bishops are on tiles of same color
-
-countPieces :: [Tile] -> [(Int, Tile)]
-countPieces []     = []
-countPieces (x:xs) = (length us, x) : countPieces vs
-        where (us, vs) = partition (==x) (x:xs)
 
 initFst   = replicate 8 Pawn
 initSnd   = [Rook, Knight, Bishop, Queen, King, Bishop, Knight, Rook]
@@ -601,19 +576,7 @@ g1 = Game { board = testBoard
           , bking = (4, 0)
           , fiftyMovesCounter = 0
           , boards = [board g1]
-          , pieceList = 
-                replicate 8 (Pawn White) ++ 
-                replicate 2 (Rook White) ++ 
-                replicate 2 (Knight White) ++ 
-                replicate 2 (Bishop White) ++ 
-                [Queen White] ++ 
-                [King White] ++ 
-                replicate 8 (Pawn Black) ++
-                replicate 2 (Rook Black) ++
-                replicate 2 (Knight Black) ++
-                replicate 2 (Bishop Black) ++
-                [Queen Black] ++
-                [King Black]
+          , pieceList = [(8, Pawn White), (2, Rook White), (2, Knight White), (2, Bishop White), (1, Queen White), (1, King White), (8, Pawn Black), (2, Rook Black), (2, Knight Black), (2, Bishop Black), (1, Queen Black), (1, King Black)]
           }
 
 b1  = movePiece (N (1, 6) (1, 4)) g1  -- Wpawn avança duas casas 
@@ -726,5 +689,5 @@ g2 = Game { board = testBoard2
           , bking = (4, 0)
           , fiftyMovesCounter = 0
           , boards = [board g1]
-          , pieceList = [King White, Pawn White, King Black]
+          , pieceList = [(1, King White), (1, Pawn White), (1, King Black)]
           }
