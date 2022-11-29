@@ -358,9 +358,30 @@ isAttacked (file, rank) b =
         Just t  -> 
             isAttackedByPawn (file, rank)   mt b ||
             isAttackedLine   (file, rank)   mt b ||
-            isAttackedByKnight (file, rank) mt b 
-            -- isAttackedByKing (file, rank) mt b
+            isAttackedByKnight (file, rank) mt b ||
+            isAttackedByKing (file, rank) mt b
             where mt = getTeam t
+
+isAttackedByKing :: Coord -> Maybe Team -> Board -> Bool
+isAttackedByKing (file, rank) Nothing      b = False
+isAttackedByKing (file, rank) (Just White) b =
+    getTile (file - 1, rank - 1) b == Just (King Black) ||
+    getTile (file - 1, rank    ) b == Just (King Black) ||
+    getTile (file - 1, rank + 1) b == Just (King Black) ||
+    getTile (file    , rank - 1) b == Just (King Black) ||
+    getTile (file    , rank + 1) b == Just (King Black) ||
+    getTile (file + 1, rank - 1) b == Just (King Black) ||
+    getTile (file + 1, rank    ) b == Just (King Black) ||
+    getTile (file + 1, rank + 1) b == Just (King Black)
+isAttackedByKing (file, rank) (Just Black) b =
+    getTile (file - 1, rank - 1) b == Just (King White) ||
+    getTile (file - 1, rank    ) b == Just (King White) ||
+    getTile (file - 1, rank + 1) b == Just (King White) ||
+    getTile (file    , rank - 1) b == Just (King White) ||
+    getTile (file    , rank + 1) b == Just (King White) ||
+    getTile (file + 1, rank - 1) b == Just (King White) ||
+    getTile (file + 1, rank    ) b == Just (King White) ||
+    getTile (file + 1, rank + 1) b == Just (King White)
 
 isAttackedByPawn :: Coord -> Maybe Team -> Board -> Bool
 isAttackedByPawn (file, rank) Nothing      b = False -- TODO: Check what to do here (how to use this functions to check is is possible to castle)
