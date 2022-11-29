@@ -44,13 +44,13 @@ type Board = [[Tile]]
 
 data Game = Game { board :: Board
                  , turn :: Int                 
-                 , castle :: Castle
-                 , movesList :: [Move]
-                 , wking :: Coord
-                 , bking :: Coord
-                 , fiftyMovesCounter :: Int
-                 , boards :: [Board] 
-                 , pieceList :: [Tile]
+                 , castle :: Castle           -- possibility to make each castle
+                 , movesList :: [Move]        -- list of valid moves made
+                 , wking :: Coord             -- white king coords
+                 , bking :: Coord             -- black king coords
+                 , fiftyMovesCounter :: Int   -- 50 move counter without capture or pawn movement
+                 , boards :: [Board]          -- stores the last boards to check repetitions
+                 , pieceList :: [Tile]        -- list of pieces on board
                  }
         deriving ( Show ) 
 
