@@ -43,7 +43,7 @@ type Board = [[Tile]]
 -- TODO: verify number of rows and columns
 
 data Game = Game { board :: Board
-                 , turn :: Int
+                 , turn :: Int                 
                  , castle :: Castle
                  , movesList :: [Move]
                  , wking :: Coord
@@ -546,6 +546,16 @@ countBoards (x:xs) = (length us, x) : countBoards vs
 isThreeRepetitions :: Game -> Bool
 isThreeRepetitions game = (maximum . map fst) (countBoards (boards game)) == 3
 
+isInsufficientMaterial :: Game -> Bool
+isInsufficientMaterial game = noPawnsLeft || onlyOneBishopLeft || oneBishopOnEachTeamOnTilesOfSameColor
+    where list              = pieceList' (pieceList game) 
+          pieceList' []     = []
+          pieceList' (x:xs) = replicate (fst x) (snd x) ++ pieceList' xs
+          noPawnsLeft       = length (filter (\x -> x == Pawn Black || x == Pawn White) list) == 0 
+          onlyOneBishopLeft = length list == 3 && union list [Rook White, Rook Black, Queen White, Queen Black] == []
+          oneBishopOnEachTeamOnTilesOfSameColor = length list == 4 && length (filter (== Bishop White) list) == 1 && length (filter (== Bishop Black) list) == 1
+          -- TODO: check if bishops are on tiles of same color
+
 initFst   = replicate 8 Pawn
 initSnd   = [Rook, Knight, Bishop, Queen, King, Bishop, Knight, Rook]
 initEmpty = replicate 8 Empty
@@ -659,3 +669,25 @@ rep5 = movePiece (N (1,7) (0, 5)) rep4
 rep6 = movePiece (N (1,0) (0, 2)) rep5 
 rep7 = movePiece (N (0,5) (1, 7)) rep6
 rep8 = movePiece (N (0,2) (1, 0)) rep7
+
+testBoard2 = [testRow1, testRow2, testRow3, testRow4, testRow5, testRow6, testRow7,testRow8] 
+
+testRow1 = [Empty, Empty, Empty, Empty, King Black, Empty, Empty, Empty]
+testRow2 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
+testRow3 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
+testRow4 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
+testRow5 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
+testRow6 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
+testRow7 = [Empty, Empty, Empty, Empty, Empty, Pawn White, Empty, Empty]
+testRow8 = [Empty, Empty, Empty, Empty, Empty, King White, Empty, Empty]
+
+g2 = Game { board = testBoard2
+          , turn = 1
+          , castle = (True, True, True, True)
+          , movesList = []
+          , wking = (4, 7)
+          , bking = (4, 0)
+          , fiftyMovesCounter = 0
+          , boards = [board g1]
+          , pieceList = [(1, King White), (1, Pawn White), (1, King Black)]
+          }
