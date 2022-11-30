@@ -2,6 +2,7 @@ module Board where
 
 import Data.Maybe
 import Data.List
+import Data.Char
 
 data Team = Black
           | White
@@ -103,6 +104,60 @@ newPieceListPP :: Coord -> Coord -> Tile -> Game -> [Tile]
 newPieceListPP coord1 coord2 tile game = tile : (pieceList deleteCaptured) 
     where deletePawn = game { pieceList = newPieceList coord1 game}
           deleteCaptured = deletePawn { pieceList = newPieceList coord2 deletePawn }
+
+readInput :: String -> Maybe ((Char, Char), (Char, Char), Maybe Tile)
+readInput (x:y:w:z:[])    = Just((toLower x, toLower y), (toLower w, toLower z), Nothing)
+readInput (x:y:w:z:t)
+    | t' == "qw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Queen White))
+    | t' == "qb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Queen Black))
+    | t' == "rw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Rook White))
+    | t' == "rb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Rook Black))
+    | t' == "bw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Bishop White))
+    | t' == "bb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Bishop Black))
+    | t' == "nw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Knight White))
+    | t' == "nb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Knight Black))
+    | otherwise = Nothing
+    where t'     = (filter (/= ' ') . map toLower) t
+readInput _               = Nothing
+
+charToInt :: Char -> Int
+charToInt x
+    | x == 'a' = 0
+    | x == 'b' = 1
+    | x == 'c' = 2
+    | x == 'd' = 3
+    | x == 'e' = 4
+    | x == 'f' = 5
+    | x == 'g' = 6
+    | x == 'h' = 7
+    | otherwise = 8 --erro
+
+charIntToInt :: Char -> Int
+charIntToInt y
+    | y == '8' = 0
+    | y == '7' = 1
+    | y == '6' = 2
+    | y == '5' = 3
+    | y == '4' = 4
+    | y == '3' = 5
+    | y == '2' = 6
+    | y == '1' = 7
+    | otherwise = 8 --erro
+
+move :: String -> Game -> Game
+move input game 
+    | readInput input == Nothing         = game
+    | otherwise                          = movePiece move game
+        where 
+            ((f1, r1), (f2, r2), tile) = fromJust(readInput input)
+            file1 = charToInt    f1
+            rank1 = charIntToInt r1
+            file2 = charToInt    f2
+            rank2 = charIntToInt r2
+            move =
+                case tile of
+                    Nothing -> (N (file1, rank1) (file2, rank2))
+                    Just t  -> (PP (file1, rank1) (file2, rank2) t)
 
 movePiece :: Move -> Game -> Game
 movePiece (N (file1, rank1) (file2, rank2)) game =
@@ -271,7 +326,7 @@ moveEnPassant (file1, rank1) (file2, rank2) c b = setTile (file1, rank1) Empty (
 
     -- TODO: Check if tile 2 is inside the board
 canMove :: Coord -> Coord -> Game -> Bool
-canMove (file1, rank1) (file2, rank2) game = difTile && difTeam && isPlayerTurn && canMovePiece && not(isChecked newgame)
+canMove (file1, rank1) (file2, rank2) game = difTile && difTeam && canMovePiece && not(isChecked newgame)
     where difTile = (rank1 /= rank2) || (file1 /= file2)
           difTeam = team1 /= team2 
           team1 = fmap getTeam (getTile (file1, rank1) b)
@@ -749,3 +804,18 @@ g2 = Game { board = testBoard2
           , boards = [board g1]
           , pieceList = [King White, Pawn White, King Black]
           }
+
+bm1  = move "B2b4" g1  -- Wpawn avança duas casas 
+bm2  = move "c1a3" b1  -- Wbishop avança diag sup esq
+bm3  = move "A3B4" b2  -- movimento invalido do Wbishop por peça do mesmo time
+bm4  = move "b4b5" b3  -- wpawn avança uma casa
+bm5  = move "a3e7" b4  -- wbishop captura (para diag sup dir) bpawn
+bm6  = move "e7h4" b5  -- Wbishop move diag inf dir
+bm7  = move "h4g3" b6  -- Wbishop move diag inf esq
+bm8  = move "f8b4" b7  -- Bbishop move diag inf esq (1,4)
+bm9  = move "b4e1" b8  -- mov inválido do Bbishop por sentido de movimento ocupado
+bm10 = move "b4d2" b9  -- Bbishop captura (para diag inf dir) Wpawn
+bm11 = move "d2d4" b10 -- mov inválido do Bbishop (vertical)
+bm12 = move "g3a3" b11 -- mov inválido do Wbishop (horizontal)
+
+mpp5 = move"a7b8 Bw" pp3 -- promoção de peão capturando peça
