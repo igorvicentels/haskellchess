@@ -185,8 +185,10 @@ movePiece (N (file1, rank1) (file2, rank2)) game =
           ms         = movesList newgame
           turn'      = turn newgame
           counter    = fiftyMovesCounter newgame
-          isPP       = ((getTile (file1, rank1) b) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) b) == Just (Pawn White) && rank1 == 1)
-          isPawnMove = getTile (file1, rank1) b == Just (Pawn White) || getTile (file1, rank1) b == Just (Pawn Black)
+          isPP       = ((getTile (file1, rank1) b) == Just (Pawn Black) && rank1 == 6) || 
+                       ((getTile (file1, rank1) b) == Just (Pawn White) && rank1 == 1)
+          isPawnMove = getTile (file1, rank1) b == Just (Pawn White) || 
+                       getTile (file1, rank1) b == Just (Pawn Black)
           isCapture  = getTile (file2, rank2) b /= Just Empty 
           team       = if odd (turn game) then White else Black
           b          = board game
@@ -204,7 +206,8 @@ movePiece (PP (file1, rank1) (file2, rank2) tile) game =
           m           = PP (file1,rank1) (file2, rank2) tile
           ms          = movesList newgame
           turn'       = turn newgame
-          isPP        = ((getTile (file1, rank1) (board game)) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) (board game)) == Just (Pawn White) && rank1 == 1)
+          isPP        = ((getTile (file1, rank1) (board game)) == Just (Pawn Black) && rank1 == 6) || 
+                        ((getTile (file1, rank1) (board game)) == Just (Pawn White) && rank1 == 1)
           isCapture   = getTile (file2, rank2) b /= Just Empty
           b           = board game
           isRightTile = fromJust (fmap getTeam (getTile (file1, rank1) b)) == getTeam tile
@@ -311,24 +314,30 @@ moveEnPassant (file1, rank1) (file2, rank2) c b = setTile (file1, rank1) Empty (
 
     -- TODO: Check if tile 2 is inside the board
 canMove :: Coord -> Coord -> Game -> Bool
-canMove (file1, rank1) (file2, rank2) game = difTile && difTeam && canMovePiece && not(isChecked newgame)
+canMove (file1, rank1) (file2, rank2) game = difTile && 
+                                             difTeam && 
+                                             canMovePiece && 
+                                             not(isChecked newgame)
     where difTile = (rank1 /= rank2) || (file1 /= file2)
           difTeam = team1 /= team2 
           team1 = fmap getTeam (getTile (file1, rank1) b)
           team2 = fmap getTeam (getTile (file2, rank2) b)
           b = board game
           turn' = turn game
-          isPlayerTurn = (team1 == Just (Just White) && turn' `mod` 2 == 1) || (team1 == Just (Just Black) && turn' `mod` 2 == 0)
+          isPlayerTurn = (team1 == Just (Just White) && turn' `mod` 2 == 1) || 
+                         (team1 == Just (Just Black) && turn' `mod` 2 == 0)
           canMovePiece = 
             case (getTile (file1, rank1) b) of
                 Nothing         -> False
                 Just (Empty)    -> False
-                Just (Pawn   c) -> canMovePawn (file1, rank1) (file2, rank2) c b || enPassant (file1, rank1) (file2, rank2) c game
+                Just (Pawn   c) -> canMovePawn (file1, rank1) (file2, rank2) c b || 
+                                   enPassant (file1, rank1) (file2, rank2) c game
                 Just (Rook   c) -> canMoveRook (file1, rank1) (file2, rank2) c b
                 Just (Knight c) -> canMoveKnight (file1, rank1) (file2, rank2) c b
                 Just (Bishop c) -> canMoveBishop (file1, rank1) (file2, rank2) c b
                 Just (Queen  c) -> canMoveQueen (file1, rank1) (file2, rank2) c b
-                Just (King   c) -> canMoveKing (file1, rank1) (file2, rank2) c b || canMakeCastle (file1, rank1) (file2, rank2) c game  
+                Just (King   c) -> canMoveKing (file1, rank1) (file2, rank2) c b || 
+                                   canMakeCastle (file1, rank1) (file2, rank2) c game  
           newgame = movePiece' (N (file1, rank1) (file2, rank2)) game
 
 canMovePawn :: Coord -> Coord -> Team -> Board -> Bool
@@ -358,7 +367,8 @@ canMoveRook (file1, rank1) (file2, rank2) c b = sameTile || (lineMove && nextTil
     where sameTile = (rank1 == rank2) && (file1 == file2)
           fileDif  = file2 - file1
           rankDif  = rank2 - rank1
-          lineMove = (abs(fileDif) == 0 && abs(rankDif) > 0) || (abs(fileDif) > 0 && abs(rankDif) == 0)
+          lineMove = (abs(fileDif) == 0 && abs(rankDif) > 0) || 
+                     (abs(fileDif) > 0 && abs(rankDif) == 0)
           file_i   = if fileDif == 0 then 0 else (if fileDif < 0 then -1 else 1)
           rank_i   = if rankDif == 0 then 0 else (if rankDif < 0 then -1 else 1)
           nextTile =
@@ -382,7 +392,9 @@ canMoveBishop (file1, rank1) (file2, rank2) c b = sameTile || (diagMove && nextT
                 Just x     -> (file1 + file_i, rank1 + rank_i) == (file2, rank2)
 
 canMoveQueen :: Coord -> Coord -> Team -> Board -> Bool
-canMoveQueen (file1, rank1) (file2, rank2) c b = canMoveBishop (file1, rank1) (file2, rank2) c b || canMoveRook (file1, rank1) (file2, rank2) c b
+canMoveQueen (file1, rank1) (file2, rank2) c b = 
+    canMoveBishop (file1, rank1) (file2, rank2) c b || 
+    canMoveRook (file1, rank1) (file2, rank2) c b
 
 canMoveKnight :: Coord -> Coord -> Team -> Board -> Bool
 canMoveKnight (file1, rank1) (file2, rank2) c b =
@@ -496,11 +508,17 @@ canMakeCastle (file1, rank1) (file2, rank2) c game
     | otherwise                        = False
     where (m1,m2,m3,m4) = castle game
 
---TODO: check the rule of Castle when the king is already in check 
 canMakeCastle' :: Coord -> Coord -> Team -> Game -> Bool
 canMakeCastle' (file1, rank1) (file2, rank2) c game
-    | file1 == 4 && file2 == 6 = isEmpty (5, rank2) b && isEmpty (6, rank2) b && (canMove (4, rank1) (5, rank2) game) && (canMove (5, rank2) (6, rank2) (movePiece (N (4, rank1) (5, rank2)) game))
-    | file1 == 4 && file2 == 2 = isEmpty (3, rank2) b && isEmpty (2, rank2) b && isEmpty (1, rank2) b && (canMove (4, rank1) (3, rank2) game) && (canMove (3, rank2) (2, rank2) (movePiece (N (4, rank1) (3, rank2)) game)) 
+    | file1 == 4 && file2 == 6 = isEmpty (5, rank2) b && 
+                                 isEmpty (6, rank2) b && 
+                                 (canMove (4, rank1) (5, rank2) game) && 
+                                 (canMove (5, rank2) (6, rank2) (movePiece (N (4, rank1) (5, rank2)) game))
+    | file1 == 4 && file2 == 2 = isEmpty (3, rank2) b && 
+                                 isEmpty (2, rank2) b && 
+                                 isEmpty (1, rank2) b && 
+                                 (canMove (4, rank1) (3, rank2) game) && 
+                                 (canMove (3, rank2) (2, rank2) (movePiece (N (4, rank1) (3, rank2)) game)) 
     | otherwise = False
     where b = board game 
           isEmpty(file, rank) b = getTile (file, rank) b == Just Empty
@@ -528,11 +546,14 @@ pawnPromotion (PP (file1, rank1) (file2, rank2) tile) game =
                 then game { board = setTile (file1, rank1) Empty (setTile (file2, rank2) tile (board game)) }
                 else game
     where team = fmap getTeam $ getTile (file1, rank1) (board game)
-          testBlackPiece = tile == Queen Black || tile == Rook Black || tile == Knight Black || tile == Bishop Black
-          testWhitePiece = tile == Queen White || tile == Rook White || tile == Knight White || tile == Bishop White
+          testBlackPiece = tile == Queen Black || tile == Rook Black || 
+                           tile == Knight Black || tile == Bishop Black
+          testWhitePiece = tile == Queen White || tile == Rook White || 
+                           tile == Knight White || tile == Bishop White
 
 isChecked :: Game -> Bool
-isChecked game = (even (turn game) && isAttacked (bking game) (board game)) || (odd (turn game) && isAttacked (wking game) (board game))
+isChecked game = (even (turn game) && isAttacked (bking game) (board game)) ||
+                 (odd (turn game) && isAttacked (wking game) (board game))
 
 isCheckmate :: Game -> Bool
 isCheckmate game = isChecked game && not(anyMove game) 
@@ -627,14 +648,19 @@ countBoards (x:xs) = (length us, x) : countBoards vs
 isThreeRepetitions :: Game -> Bool
 isThreeRepetitions game = (maximum . map fst) (countBoards (boards game)) == 3
 
+-- TODO: Rewrite this function
 isInsufficientMaterial :: Game -> Bool
 isInsufficientMaterial game = noPawnsLeft || onlyOneBishopLeft || oneBishopOnEachTeamOnTilesOfSameColor
     where list              = pieceList game
           pieceList' []     = []
           pieceList' (x:xs) = replicate (fst x) (snd x) ++ pieceList' xs
           noPawnsLeft       = length (filter (\x -> x == Pawn Black || x == Pawn White) list) == 0 
-          onlyOneBishopLeft = length list == 3 && union list [Rook White, Rook Black, Queen White, Queen Black] == []
-          oneBishopOnEachTeamOnTilesOfSameColor = length list == 4 && length (filter (== Bishop White) list) == 1 && length (filter (== Bishop Black) list) == 1
+          onlyOneBishopLeft = length list == 3 && 
+                              union list [Rook White, Rook Black, Queen White, Queen Black] == []
+          oneBishopOnEachTeamOnTilesOfSameColor = 
+                            length list == 4 && 
+                            length (filter (== Bishop White) list) == 1 && 
+                            length (filter (== Bishop Black) list) == 1
           -- TODO: check if bishops are on tiles of same color
 
 countPieces :: [Tile] -> [(Int, Tile)]
