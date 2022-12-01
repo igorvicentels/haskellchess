@@ -222,21 +222,22 @@ movePiece (N (file1, rank1) (file2, rank2)) game =
           b          = board game
           enPassant' = enPassant (file1, rank1) (file2, rank2) team game
 movePiece (PP (file1, rank1) (file2, rank2) tile) game =
-    if canMove' && isPP
+    if canMove' && isPP && isRightTile
         then newgame { movesList = m : ms
                      , turn = turn' + 1
                      , fiftyMovesCounter = 0 
                      , boards = [] 
                      , pieceList = newPieceListPP (file1, rank1) (file2, rank2) tile game }
         else game
-    where newgame  = movePiece' (PP (file1, rank1) (file2, rank2) tile) game
-          canMove' = canMove (file1, rank1) (file2, rank2) game 
-          m        = PP (file1,rank1) (file2, rank2) tile
-          ms       = movesList newgame
-          turn'    = turn newgame
-          isPP     = ((getTile (file1, rank1) (board game)) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) (board game)) == Just (Pawn White) && rank1 == 1)
-          isCapture  = getTile (file2, rank2) b /= Just Empty
-          b          = board game
+    where newgame     = movePiece' (PP (file1, rank1) (file2, rank2) tile) game
+          canMove'    = canMove (file1, rank1) (file2, rank2) game 
+          m           = PP (file1,rank1) (file2, rank2) tile
+          ms          = movesList newgame
+          turn'       = turn newgame
+          isPP        = ((getTile (file1, rank1) (board game)) == Just (Pawn Black) && rank1 == 6) || ((getTile (file1, rank1) (board game)) == Just (Pawn White) && rank1 == 1)
+          isCapture   = getTile (file2, rank2) b /= Just Empty
+          b           = board game
+          isRightTile = fromJust (fmap getTeam (getTile (file1, rank1) b)) == getTeam tile
 
 movePiece' :: Move -> Game -> Game
 movePiece' (N (file1, rank1) (file2, rank2)) game = 
