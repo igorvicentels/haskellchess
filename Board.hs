@@ -56,36 +56,6 @@ data Game = Game { board :: Board
                  }
         deriving ( Show ) 
 
-showRow :: [Tile] -> IO ()
-showRow []     = return () 
-showRow [x]    = putStrLn $ show x 
-showRow (x:xs) = do putStr $ show x 
-                    putStr " | "
-                    showRow xs
-
-showLine :: IO ()
-showLine = putStrLn "------------------------------"
-
-showBoard :: Board -> IO ()
-showBoard []     = return ()
-showBoard [x]    = showRow x
-showBoard (x:xs) = do showRow x
-                      showLine 
-                      showBoard xs
-
--- |---| A | B | C | D | E | F | G | H |---|
--- |---------------------------------------|
--- | 8 | R | K | B | Q | K | B | K | R | 8 |
--- | 7 | P | P | P | P | P | P | P | P | 7 |
--- | 6 |   |   |   |   |   |   |   |   | 6 |
--- | 5 |   |   |   |   |   |   |   |   | 5 |
--- | 4 |   |   |   |   |   |   |   |   | 4 |
--- | 3 |   |   |   |   |   |   |   |   | 3 |
--- | 2 | P | P | P | P | P | P | P | P | 2 |
--- | 1 | R | K | B | Q | K | B | K | R | 1 |
--- |---------------------------------------|
--- |---| A | B | C | D | E | F | G | H |---|
-
 getTile :: Coord -> Board -> Maybe Tile
 getTile (file, rank) b
     | rank < 0 || file < 0 || rank > 7 || file > 7 = Nothing
@@ -707,133 +677,6 @@ g1 = Game { board = testBoard
                 [King Black]
           }
 
-b1  = movePiece (N (1, 6) (1, 4)) g1  -- Wpawn avança duas casas 
-b2  = movePiece (N (2, 7) (0, 5)) b1  -- Wbishop avança diag sup esq
-b3  = movePiece (N (0, 5) (1, 4)) b2  -- movimento invalido do Wbishop por peça do mesmo time
-b4  = movePiece (N (1, 4) (1, 3)) b3  -- wpawn avança uma casa
-b5  = movePiece (N (0, 5) (4, 1)) b4  -- wbishop captura (para diag sup dir) bpawn
-b6  = movePiece (N (4, 1) (7, 4)) b5  -- Wbishop move diag inf dir
-b7  = movePiece (N (7, 4) (6, 5)) b6  -- Wbishop move diag inf esq
-b8  = movePiece (N (5, 0) (1, 4)) b7  -- Bbishop move diag inf esq
-b9  = movePiece (N (1, 4) (4, 7)) b8  -- mov inválido do Bbishop por sentido de movimento ocupado
-b10 = movePiece (N (1, 4) (3, 6)) b9  -- Bbishop captura (para diag inf dir) Wpawn
-b11 = movePiece (N (3, 6) (3, 4)) b10 -- mov inválido do Bbishop (vertical)
-b12 = movePiece (N (6, 5) (0, 5)) b11 -- mov inválido do Wbishop (horizontal)
-
-r1  = movePiece (N (0, 6) (0, 4)) g1  
-r2  = movePiece (N (0, 7) (0, 5)) r1 -- movimento Wrook vertical cima
-r3  = movePiece (N (0, 5) (7, 5)) r2 -- movimento Wrook horizontal
-r4  = movePiece (N (7, 5) (7, 1)) r3 -- Wrook captura (para cima) Bpawn
-r5  = movePiece (N (7, 1) (6, 1)) r4 -- Wrook captura (para esq) Bpawn
-r6  = movePiece (N (6, 1) (5, 0)) r5 -- mov invalido Wrook diagonal
-r7  = movePiece (N (6, 1) (6, 4)) r6 -- movimento Wrook vertical baixo
-r8  = movePiece (N (6, 4) (1, 4)) r7 -- movimento Wrook horizontal esq
-r9  = movePiece (N (1, 4) (1, 0)) r8 -- mov invalido Wrook por sentido de mov ocupado
-
-n1  = movePiece (N (1, 7) (0, 5)) g1 -- mov Wknight sup esq
-n2  = movePiece (N (0, 5) (1, 3)) n1 -- mov Wknight sup dir
-n3  = movePiece (N (1, 3) (2, 1)) n2 -- Wknight captura (para direção sup dir) Bpawn
-n4  = movePiece (N (2, 1) (3, 2)) n3 -- movimento invalido Wknight
-n5  = movePiece (N (2, 1) (3, 3)) n4 -- movimento Wknight inf dir
-n6  = movePiece (N (3, 3) (2, 5)) n5 -- movimento Wknight inf esq
-n7  = movePiece (N (2, 5) (4, 6)) n6 -- movimento invalido Wknight por tile ocupado pela mesma cor 
-n8  = movePiece (N (2, 5) (4, 4)) n7 -- movimento Wknight dir sup 
-
-k1  = movePiece (N (4, 6) (4, 4)) g1  -- mov Wpawn cima
-k2  = movePiece (N (4, 7) (4, 5)) k1  -- mov invalido (pular uma casa) Wking sup 
-k3  = movePiece (N (4, 7) (4, 6)) k2  -- mov Wking cima
-k4  = movePiece (N (4, 6) (4, 5)) k3  -- mov Wking cima
-k5  = movePiece (N (4, 5) (5, 5)) k4  -- mov Wking direita 
-k6  = movePiece (N (4, 5) (3, 5)) k4  -- mov Wking esquerda 
-k7  = movePiece (N (4, 5) (5, 4)) k4  -- mov Wking direita cima
-k8  = movePiece (N (4, 5) (3, 4)) k4  -- mov Wking esquerda cima
-k9  = movePiece (N (4, 5) (5, 6)) k4  -- mov Wking para tile ocupada por mesmo time
-k10 = movePiece (N (3, 6) (3, 4)) k4  -- mov Wpawn cima
-k11 = movePiece (N (4, 5) (3, 6)) k10 -- mov Wking baixo esq
-k12 = movePiece (N (3, 6) (4, 7)) k11 -- mov Wking baixo dir
-
-c0  = movePiece (N (2, 6) (2, 4)) g1  --mov wpawn
-c1  = movePiece (N (1, 7) (2, 5)) c0  --mov wknight
-c2  = movePiece (N (1, 6) (1, 4)) c1  --mov wpawn
-c3  = movePiece (N (2, 7) (0, 5)) c2  --mov wbishop
-c4  = movePiece (N (3, 7) (2, 6)) c3  --mov wqueen
-c5  = movePiece (N (6, 6) (6, 4)) c4  --mov wpawn
-c6  = movePiece (N (6, 7) (5, 5)) c5  --mov wknight
-c7  = movePiece (N (5, 7) (7, 5)) c6  --mov wbishop
-c8  = movePiece (N (4, 7) (6, 7)) c7  --castle dir 
-c9  = movePiece (N (4, 7) (2, 7)) c7  --castle esq
-
-e1 = movePiece (N (1, 6) (1, 4)) g1  
-e2 = movePiece (N (2, 1) (2, 3)) e1
-e3 = movePiece (N (1, 4) (1, 3)) e2
-e4 = movePiece (N (0, 1) (0, 3)) e3
-e5 = movePiece (N (1, 3) (2, 2)) e4  -- mov invalido (peão a ser capturado não havia se movido na jogada anterior)
-e6 = movePiece (N (1, 3) (0, 2)) e4  -- en passant certo
-e7 = movePiece (N (2, 3) (2, 4)) e6  
-e8 = movePiece (N (3, 6) (3, 4)) e7  
-e9 = movePiece (N (2, 4) (3, 5)) e8  -- en passant certo
-
-pp1 = movePiece (N (1, 0) (2, 2)) e8
-pp2 = movePiece (N (0, 2) (0, 1)) pp1
-pp3 = movePiece (N (0, 0) (1, 0)) pp2
-pp4 = movePiece (N (0, 1) (0, 0)) pp3 -- promoção de peão avançando uma casa
-pp5 = movePiece (PP (0, 1) (1, 0) (Bishop White)) pp3 -- promoção de peão capturando peça
-pp6 = movePiece (N (1, 0) (0, 0)) pp5
-
-t1 = movePiece (N (1, 0) (2, 2)) e8
-t2 = movePiece (N (1, 7) (2, 5)) t1
-t3 = movePiece (N (0, 0) (1, 0)) t2
-t4 = movePiece (N (3, 7) (3, 5)) t3
-t5 = movePiece (N (3, 0) (0, 3)) t4
-t6 = movePiece (N (3, 5) (2, 4)) t5
-t7 = movePiece (N (2, 2) (3, 4)) t6
-t8 = movePiece (N (2, 4) (2, 0)) t7
-
-rep1 = movePiece (N (1,7) (0, 5)) g1
-rep2 = movePiece (N (1,0) (0, 2)) rep1
-rep3 = movePiece (N (0,5) (1, 7)) rep2
-rep4 = movePiece (N (0,2) (1, 0)) rep3
-rep5 = movePiece (N (1,7) (0, 5)) rep4
-rep6 = movePiece (N (1,0) (0, 2)) rep5 
-rep7 = movePiece (N (0,5) (1, 7)) rep6
-rep8 = movePiece (N (0,2) (1, 0)) rep7
-
-testBoard2 = [testRow1, testRow2, testRow3, testRow4, testRow5, testRow6, testRow7,testRow8] 
-
-testRow1 = [Empty, Empty, Empty, Empty, King Black, Empty, Empty, Empty]
-testRow2 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
-testRow3 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
-testRow4 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
-testRow5 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
-testRow6 = [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty]
-testRow7 = [Empty, Empty, Empty, Empty, Empty, Pawn White, Empty, Empty]
-testRow8 = [Empty, Empty, Empty, Empty, Empty, King White, Empty, Empty]
-
-g2 = Game { board = testBoard2
-          , turn = 1
-          , castle = (True, True, True, True)
-          , movesList = []
-          , wking = (4, 7)
-          , bking = (4, 0)
-          , fiftyMovesCounter = 0
-          , boards = [board g1]
-          , pieceList = [King White, Pawn White, King Black]
-          }
-
-bm1  = move "B2b4" g1  -- Wpawn avança duas casas 
-bm2  = move "c1a3" b1  -- Wbishop avança diag sup esq
-bm3  = move "A3B4" b2  -- movimento invalido do Wbishop por peça do mesmo time
-bm4  = move "b4b5" b3  -- wpawn avança uma casa
-bm5  = move "a3e7" b4  -- wbishop captura (para diag sup dir) bpawn
-bm6  = move "e7h4" b5  -- Wbishop move diag inf dir
-bm7  = move "h4g3" b6  -- Wbishop move diag inf esq
-bm8  = move "f8b4" b7  -- Bbishop move diag inf esq (1,4)
-bm9  = move "b4e1" b8  -- mov inválido do Bbishop por sentido de movimento ocupado
-bm10 = move "b4d2" b9  -- Bbishop captura (para diag inf dir) Wpawn
-bm11 = move "d2d4" b10 -- mov inválido do Bbishop (vertical)
-bm12 = move "g3a3" b11 -- mov inválido do Wbishop (horizontal)
-
-mpp5 = move"a7b8 Bw" pp3 -- promoção de peão capturando peça
 
 
 -- testing interactivity
@@ -844,6 +687,53 @@ cls = putStr "\ESC[2J"
 goto :: (Int, Int) -> IO ()
 goto (x,y) = putStr ("\ESC[" ++ show y ++ ";" ++ show x ++ "H")
 
+setColorGrey :: IO ()
+setColorGrey = putStr "\ESC[30m"
+
+setColorBlack :: IO ()
+setColorBlack = putStr "\ESC[31m"
+
+setColorWhite :: IO ()
+setColorWhite = putStr "\ESC[97m"
+
+showRow :: [Tile] -> Int -> IO ()
+showRow row n = do putStr $ "| " ++ show n ++ " | "
+                   setColorWhite
+                   go row
+                   setColorGrey
+                   putStrLn $ " | " ++ show n ++ " |"
+    where go []     = return () 
+          go [x]    = if isLower (head (show x)) then
+                            do setColorBlack
+                               putStr $ show x
+                               setColorWhite
+                         else
+                            putStr $ show x
+          go (x:xs) = do if isLower (head (show x)) then
+                            do setColorBlack
+                               putStr $ show x
+                               setColorWhite
+                         else
+                            putStr $ show x
+                         putStr " | "
+                         go xs 
+
+showLine :: IO ()
+showLine = putStrLn "-----------------------------------------"
+
+showBoard :: Board -> IO ()
+showBoard b = do setColorGrey
+                 putStrLn "|---| A | B | C | D | E | F | G | H |---|"
+                 showLine
+                 go b 8
+                 showLine
+                 putStrLn "|---| A | B | C | D | E | F | G | H |---|"
+    where
+        go []     _ = return ()
+        go [x]    n = showRow x n
+        go (x:xs) n = do showRow x n
+                         go xs (n - 1)
+
 run :: Game -> IO ()
 run game = do cls
               goto (1,1)
@@ -853,9 +743,9 @@ run game = do cls
 run' :: Game -> IO ()
 run' game 
     | isCheckmate game = putStrLn $ "Checkmate! " ++ if even $ turn game then 
-                                                          " White wins"    
+                                                          "White wins"    
                                                      else 
-                                                          " Black wins"
+                                                          "Black wins"
     | isStalemate game = putStrLn "Stalemate! "  
     | otherwise        = do putStr $ if odd $ turn game then 
                                         " White move: "    
