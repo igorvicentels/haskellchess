@@ -3,6 +3,7 @@ module Board where
 import Data.Maybe
 import Data.List
 import Data.Char
+import System.IO
 
 data Team = Black
           | White
@@ -71,6 +72,19 @@ showBoard [x]    = showRow x
 showBoard (x:xs) = do showRow x
                       showLine 
                       showBoard xs
+
+-- |---| A | B | C | D | E | F | G | H |---|
+-- |---------------------------------------|
+-- | 8 | R | K | B | Q | K | B | K | R | 8 |
+-- | 7 | P | P | P | P | P | P | P | P | 7 |
+-- | 6 |   |   |   |   |   |   |   |   | 6 |
+-- | 5 |   |   |   |   |   |   |   |   | 5 |
+-- | 4 |   |   |   |   |   |   |   |   | 4 |
+-- | 3 |   |   |   |   |   |   |   |   | 3 |
+-- | 2 | P | P | P | P | P | P | P | P | 2 |
+-- | 1 | R | K | B | Q | K | B | K | R | 1 |
+-- |---------------------------------------|
+-- |---| A | B | C | D | E | F | G | H |---|
 
 getTile :: Coord -> Board -> Maybe Tile
 getTile (file, rank) b
@@ -819,3 +833,32 @@ bm11 = move "d2d4" b10 -- mov inválido do Bbishop (vertical)
 bm12 = move "g3a3" b11 -- mov inválido do Wbishop (horizontal)
 
 mpp5 = move"a7b8 Bw" pp3 -- promoção de peão capturando peça
+
+
+-- testing interactivity
+
+cls :: IO ()
+cls = putStr "\ESC[2J"
+
+goto :: (Int, Int) -> IO ()
+goto (x,y) = putStr ("\ESC[" ++ show y ++ ";" ++ show x ++ "H")
+
+run :: Game -> IO ()
+run game = do cls
+              goto (1,1)
+              showBoard $ board game
+              run' game 
+        
+run' :: Game -> IO ()
+run' game 
+    | isCheckmate game = putStrLn $ "Checkmate! " ++ if even $ turn game then 
+                                                          " White wins"    
+                                                     else 
+                                                          " Black wins"
+    | isStalemate game = putStrLn "Stalemate! "  
+    | otherwise        = do putStr $ if odd $ turn game then 
+                                        " White move: "    
+                                     else 
+                                        " Black move: "
+                            l <- getLine
+                            run $ move l game
