@@ -762,5 +762,29 @@ run' game
                                         "White move: "    
                                      else 
                                         "Black move: "
-                            l <- getLine
+                            l <- readLine
                             run $ move l game
+
+-- Hutton ch10
+getCh :: IO Char
+getCh = do oldEcho <- hGetEcho stdin 
+           hSetEcho stdin False
+           x <- getChar
+           hSetEcho stdin oldEcho
+           return x
+
+readLine :: IO String
+readLine = go ""
+    where go xs = do c <- getCh
+                     if c == '\n' then
+                         do putChar '\n'
+                            return (reverse xs)
+                     else if c == '\DEL' then
+                         case xs of
+                            [] -> go ""
+                            (y:ys) ->
+                                do putStr "\b \b"
+                                   go ys
+                     else
+                         do putChar c
+                            go $ c:xs
