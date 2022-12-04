@@ -27,18 +27,18 @@ data Tile = Pawn Team
           deriving(Eq)
 
 instance Show Tile where
-    show (Pawn   Black) = "p"
-    show (Rook   Black) = "r"
-    show (Knight Black) = "n"
-    show (Bishop Black) = "b"
-    show (Queen  Black) = "q"
-    show (King   Black) = "k"
-    show (Pawn   White) = "P"
-    show (Rook   White) = "R"
-    show (Knight White) = "N"
-    show (Bishop White) = "B"
-    show (Queen  White) = "Q"
-    show (King   White) = "K"
+    show (Pawn   Black) = "♟︎"
+    show (Rook   Black) = "♜"
+    show (Knight Black) = "♞"
+    show (Bishop Black) = "♝"
+    show (Queen  Black) = "♛"
+    show (King   Black) = "♚"
+    show (Pawn   White) = "♙"
+    show (Rook   White) = "♖"
+    show (Knight White) = "♘"
+    show (Bishop White) = "♗"
+    show (Queen  White) = "♕"
+    show (King   White) = "♔"
     show Empty          = " "
 
 type Board = [[Tile]]
@@ -745,7 +745,7 @@ showRow row n = do putStr $ "| " ++ show n ++ " | "
                          go xs 
 
 showLine :: IO ()
-showLine = putStrLn "-----------------------------------------"
+showLine = putStrLn "|---|-------------------------------|---|"
 
 showBoard :: Board -> IO ()
 showBoard b = do setColorGrey
@@ -774,8 +774,8 @@ run' game
                                                           "Black wins"
     | isStalemate game = putStrLn "Stalemate! "  
     | otherwise        = do putStr $ if odd $ turn game then 
-                                        " White move: "    
+                                        "White move: "    
                                      else 
-                                        " Black move: "
+                                        "Black move: "
                             l <- getLine
                             run $ move l game
