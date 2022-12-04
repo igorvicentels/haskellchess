@@ -714,18 +714,16 @@ showRow row n = do putStr $ "| " ++ show n ++ " | "
                    setColorGrey
                    putStrLn $ " | " ++ show n ++ " |"
     where go []     = return () 
-          go [x]    = if isLower (head (show x)) then
-                            do setColorBlack
-                               putStr $ show x
-                               setColorWhite
-                         else
-                            putStr $ show x
-          go (x:xs) = do if isLower (head (show x)) then
-                            do setColorBlack
-                               putStr $ show x
-                               setColorWhite
-                         else
-                            putStr $ show x
+          go [x]    = case getTeam x of
+                        Just Black -> do setColorBlack
+                                         putStr $ show x
+                                         setColorWhite
+                        _          -> putStr $ show x
+          go (x:xs) = do case getTeam x of
+                            Just Black -> do setColorBlack
+                                             putStr $ show x
+                                             setColorWhite
+                            _          -> putStr $ show x
                          putStr " | "
                          go xs 
 
