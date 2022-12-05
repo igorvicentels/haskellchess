@@ -79,6 +79,16 @@ setTile' :: Int -> Tile -> [Tile] -> [Tile]
 setTile' 0 t (y:ys) = t : ys
 setTile' x t (y:ys) = y : setTile' (x-1) t ys
 
+findPiece :: Tile -> Board -> Maybe Coord
+findPiece t []     = Nothing
+findPiece t (x:xs) = go 0 t (x:xs)
+    where go n t []     = Nothing
+          go n t (x:xs) = case find (== t) x of
+                            Nothing -> go (n + 1) t xs
+                            Just _  -> case findIndex (== t) x of
+                                        Nothing -> Nothing
+                                        Just i -> Just (i, n) 
+
 newPieceList :: Coord -> Game -> [Tile]
 newPieceList (file, rank) game   = go (getTile (file, rank) (board game)) (pieceList game) 
     where go _            []     = []
@@ -174,7 +184,7 @@ movePiece (N (file1, rank1) (file2, rank2)) game =
                         newgame { movesList = m : ms
                                 , turn = turn' + 1
                                 , fiftyMovesCounter = counter + 1 
-                                , boards = board newgame : boards newgame} --TODO: check if nesse make setCastle here
+                                , boards = board newgame : boards newgame} 
         else game
     where newgame    = movePiece' (N (file1, rank1) (file2, rank2)) game
           canMove'   = canMove (file1, rank1) (file2, rank2) game 
@@ -656,8 +666,11 @@ isInsufficientMaterial game = noPawnsLeft || onlyOneBishopLeft || oneBishopOnEac
           oneBishopOnEachTeamOnTilesOfSameColor = 
                             length list == 4 && 
                             length (filter (== Bishop White) list) == 1 && 
-                            length (filter (== Bishop Black) list) == 1
-          -- TODO: check if bishops are on tiles of same color
+                            length (filter (== Bishop Black) list) == 1 &&
+                            fmap getTileColor (findPiece (Bishop White) (board game)) /= fmap getTileColor (findPiece (Bishop Black) (board game)) 
+
+getTileColor :: Coord -> Team
+getTileColor (file,rank) = if even (file + rank) then White else Black
 
 countPieces :: [Tile] -> [(Int, Tile)]
 countPieces []     = []
