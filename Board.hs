@@ -1,60 +1,49 @@
 module Board where
 
+import Types
+
 import Data.Maybe
 import Data.List
 import Data.Char
-import System.IO
 
-data Team = Black
-          | White
-    deriving( Show, Eq )
+readInput :: String -> Maybe ((Char, Char), (Char, Char), Maybe Tile)
+readInput (x:y:w:z:[])    = Just((toLower x, toLower y), (toLower w, toLower z), Nothing)
+readInput (x:y:w:z:t)
+    | t' == "qw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Queen White))
+    | t' == "qb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Queen Black))
+    | t' == "rw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Rook White))
+    | t' == "rb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Rook Black))
+    | t' == "bw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Bishop White))
+    | t' == "bb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Bishop Black))
+    | t' == "nw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Knight White))
+    | t' == "nb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Knight Black))
+    | otherwise = Nothing
+    where t'     = (filter (/= ' ') . map toLower) t
+readInput _               = Nothing
 
-type Coord = (Int, Int)
+charToInt :: Char -> Int
+charToInt x
+    | x == 'a' = 0
+    | x == 'b' = 1
+    | x == 'c' = 2
+    | x == 'd' = 3
+    | x == 'e' = 4
+    | x == 'f' = 5
+    | x == 'g' = 6
+    | x == 'h' = 7
+    | otherwise = 8 --erro
 
-type Castle = (Bool, Bool, Bool, Bool) 
-
-data Move = N Coord Coord
-          | PP Coord Coord Tile
-          deriving ( Eq, Show )
-
-data Tile = Pawn Team
-          | Rook Team
-          | Knight Team
-          | Bishop Team
-          | Queen Team
-          | King Team
-          | Empty
-          deriving(Eq)
-
-instance Show Tile where
-    show (Pawn   Black) = "♟︎"
-    show (Rook   Black) = "♜"
-    show (Knight Black) = "♞"
-    show (Bishop Black) = "♝"
-    show (Queen  Black) = "♛"
-    show (King   Black) = "♚"
-    show (Pawn   White) = "♙"
-    show (Rook   White) = "♖"
-    show (Knight White) = "♘"
-    show (Bishop White) = "♗"
-    show (Queen  White) = "♕"
-    show (King   White) = "♔"
-    show Empty          = " "
-
-type Board = [[Tile]]
--- TODO: verify number of rows and columns
-
-data Game = Game { board :: Board
-                 , turn :: Int                 
-                 , castle :: Castle           -- possibility to make each castle
-                 , movesList :: [Move]        -- list of valid moves made
-                 , wking :: Coord             -- white king coords
-                 , bking :: Coord             -- black king coords
-                 , fiftyMovesCounter :: Int   -- 50 move counter without capture or pawn movement
-                 , boards :: [Board]          -- stores the last boards to check repetitions
-                 , pieceList :: [Tile]        -- list of pieces on board
-                 }
-        deriving ( Show ) 
+charIntToInt :: Char -> Int
+charIntToInt y
+    | y == '8' = 0
+    | y == '7' = 1
+    | y == '6' = 2
+    | y == '5' = 3
+    | y == '4' = 4
+    | y == '3' = 5
+    | y == '2' = 6
+    | y == '1' = 7
+    | otherwise = 8 --erro
 
 getTile :: Coord -> Board -> Maybe Tile
 getTile (file, rank) b
@@ -98,45 +87,6 @@ newPieceListPP :: Coord -> Coord -> Tile -> Game -> [Tile]
 newPieceListPP coord1 coord2 tile game = tile : (pieceList deleteCaptured) 
     where deletePawn = game { pieceList = newPieceList coord1 game}
           deleteCaptured = deletePawn { pieceList = newPieceList coord2 deletePawn }
-
-readInput :: String -> Maybe ((Char, Char), (Char, Char), Maybe Tile)
-readInput (x:y:w:z:[])    = Just((toLower x, toLower y), (toLower w, toLower z), Nothing)
-readInput (x:y:w:z:t)
-    | t' == "qw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Queen White))
-    | t' == "qb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Queen Black))
-    | t' == "rw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Rook White))
-    | t' == "rb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Rook Black))
-    | t' == "bw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Bishop White))
-    | t' == "bb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Bishop Black))
-    | t' == "nw" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Knight White))
-    | t' == "nb" = Just((toLower x, toLower y), (toLower w, toLower z), Just(Knight Black))
-    | otherwise = Nothing
-    where t'     = (filter (/= ' ') . map toLower) t
-readInput _               = Nothing
-
-charToInt :: Char -> Int
-charToInt x
-    | x == 'a' = 0
-    | x == 'b' = 1
-    | x == 'c' = 2
-    | x == 'd' = 3
-    | x == 'e' = 4
-    | x == 'f' = 5
-    | x == 'g' = 6
-    | x == 'h' = 7
-    | otherwise = 8 --erro
-
-charIntToInt :: Char -> Int
-charIntToInt y
-    | y == '8' = 0
-    | y == '7' = 1
-    | y == '6' = 2
-    | y == '5' = 3
-    | y == '4' = 4
-    | y == '3' = 5
-    | y == '2' = 6
-    | y == '1' = 7
-    | otherwise = 8 --erro
 
 move :: String -> Game -> Game
 move input game 
@@ -559,115 +509,7 @@ pawnPromotion (PP (file1, rank1) (file2, rank2) tile) game =
 
 isChecked :: Game -> Bool
 isChecked game = (even (turn game) && isAttacked (bking game) (board game)) ||
-                 (odd (turn game) && isAttacked (wking game) (board game))
-
-isCheckmate :: Game -> Bool
-isCheckmate game = isChecked game && not(anyMove game) 
-
-isStalemate :: Game -> Bool
-isStalemate game = not(isChecked game) && not(anyMove game)
-
-anyMove :: Game -> Bool
-anyMove game = anyMoveAux (0, 0) game
-
-anyMoveAux :: Coord -> Game -> Bool
-anyMoveAux (file, rank) game
-    |file > 7  = anyMoveAux (0, rank + 1) game
-    |rank > 7  = False
-    |otherwise = anyMoveTile || anyMoveAux (file + 1, rank) game        
-    where b           = board game 
-          anyMoveTile = 
-            case getTile (rank , file) b of
-                Just (King c)   -> anyMoveKing   (file, rank) game
-                Just (Pawn c)   -> anyMovePawn c (file, rank) game
-                Just (Knight c) -> anyMoveKnight (file, rank) game
-                Just (Rook c)   -> anyMoveRook   (file, rank) game
-                Just (Bishop c) -> anyMoveBishop (file, rank) game
-                Just (Queen c)  -> anyMoveQueen  (file, rank) game
-                _               -> False
-
-anyMoveKing :: Coord -> Game -> Bool
-anyMoveKing (file, rank) game = 
-    canMove (file, rank) (file, rank + 1)     game ||
-    canMove (file, rank) (file, rank - 1)     game ||
-    canMove (file, rank) (file + 1, rank)     game ||
-    canMove (file, rank) (file - 1, rank)     game ||
-    canMove (file, rank) (file + 1, rank + 1) game ||
-    canMove (file, rank) (file - 1, rank + 1) game ||
-    canMove (file, rank) (file + 1, rank - 1) game ||
-    canMove (file, rank) (file - 1, rank - 1) game
-
-anyMoveKnight :: Coord -> Game -> Bool
-anyMoveKnight (file, rank) game = 
-    canMove (file, rank) (file + 1, rank + 2) game ||
-    canMove (file, rank) (file + 1, rank - 2) game ||
-    canMove (file, rank) (file - 1, rank + 2) game ||
-    canMove (file, rank) (file - 1, rank - 2) game ||
-    canMove (file, rank) (file - 2, rank + 1) game ||
-    canMove (file, rank) (file - 2, rank - 1) game ||
-    canMove (file, rank) (file + 2, rank + 1) game ||
-    canMove (file, rank) (file + 2, rank - 1) game
-
-anyMovePawn :: Team -> Coord -> Game -> Bool
-anyMovePawn c (file, rank) game = 
-    case c of
-        Black -> canMove (file, rank) (file, rank + 1)     game || 
-                 canMove (file, rank) (file, rank + 2)     game || 
-                 canMove (file, rank) (file + 1, rank + 1) game ||
-                 canMove (file, rank) (file - 1, rank + 1) game
-
-        White -> canMove (file, rank) (file, rank - 1) game     || 
-                 canMove (file, rank) (file, rank - 2) game     || 
-                 canMove (file, rank) (file + 1, rank - 1) game ||
-                 canMove (file, rank) (file - 1, rank - 1) game
-
-anyMoveRook :: Coord -> Game -> Bool
-anyMoveRook (file, rank) game = 
-    anyMoveLineAux (file, rank) (file + 1, rank) game ||
-    anyMoveLineAux (file, rank) (file - 1, rank) game || 
-    anyMoveLineAux (file, rank) (file, rank - 1) game || 
-    anyMoveLineAux (file, rank) (file, rank + 1) game
-
-anyMoveBishop :: Coord -> Game -> Bool
-anyMoveBishop (file, rank) game =
-    anyMoveLineAux (file, rank) (file + 1, rank + 1) game ||
-    anyMoveLineAux (file, rank) (file + 1, rank - 1) game || 
-    anyMoveLineAux (file, rank) (file - 1, rank + 1) game || 
-    anyMoveLineAux (file, rank) (file - 1, rank - 1) game
-
-anyMoveLineAux :: Coord -> Coord -> Game -> Bool 
-anyMoveLineAux (file, rank) (file2, rank2) game = insideTable && (canMove' || nextTile)
-    where insideTable = file2 > 0 && file2 < 7 && rank2 > 0 && rank2 < 7
-          canMove'    = canMove (file, rank) (file2, rank2) game
-          rankDif     = rank2 - rank
-          fileDif     = file2 - file
-          nextTile    = anyMoveLineAux (file, rank) (file2 + fileDif, rank2 + rankDif) game
-
-anyMoveQueen :: Coord -> Game -> Bool
-anyMoveQueen (file, rank) game = anyMoveBishop (file, rank) game || anyMoveRook (file, rank) game
-
-countBoards :: [Board] -> [(Int, Board)]
-countBoards []     = []
-countBoards (x:xs) = (length us, x) : countBoards vs
-        where (us, vs) = partition (==x) (x:xs)
-
-isThreeRepetitions :: Game -> Bool
-isThreeRepetitions game = (maximum . map fst) (countBoards (boards game)) == 3
-
--- TODO: Rewrite this function
-isInsufficientMaterial :: Game -> Bool
-isInsufficientMaterial game = noPawnsLeft || onlyOneBishopLeft || oneBishopOnEachTeamOnTilesOfSameColor
-    where list              = pieceList game
-          pieceList' []     = []
-          pieceList' (x:xs) = replicate (fst x) (snd x) ++ pieceList' xs
-          noPawnsLeft       = length (filter (\x -> x == Pawn Black || x == Pawn White) list) == 0 
-          onlyOneBishopLeft = length list == 3 && 
-                              union list [Rook White, Rook Black, Queen White, Queen Black] == []
-          oneBishopOnEachTeamOnTilesOfSameColor = 
-                            length list == 4 && 
-                            length (filter (== Bishop White) list) == 1 && 
-                            length (filter (== Bishop Black) list) == 1 &&
-                            fmap getTileColor (findPiece (Bishop White) (board game)) /= fmap getTileColor (findPiece (Bishop Black) (board game)) 
+                 (odd (turn game) && isAttacked (wking game) (board game)) 
 
 getTileColor :: Coord -> Team
 getTileColor (file,rank) = if even (file + rank) then White else Black
@@ -676,136 +518,3 @@ countPieces :: [Tile] -> [(Int, Tile)]
 countPieces []     = []
 countPieces (x:xs) = (length us, x) : countPieces vs
         where (us, vs) = partition (==x) (x:xs)
-
-initFst   = replicate 8 Pawn
-initSnd   = [Rook, Knight, Bishop, Queen, King, Bishop, Knight, Rook]
-initEmpty = replicate 8 Empty
-
-testBoard =
-  [ fmap ($ Black) initSnd
-  , fmap ($ Black) initFst
-  ] ++ replicate 4 initEmpty ++
-  [ fmap ($ White) initFst
-  , fmap ($ White) initSnd
-  ]
-
-g1 = Game { board = testBoard
-          , turn = 1
-          , castle = (True, True, True, True)
-          , movesList = []
-          , wking = (4, 7)
-          , bking = (4, 0)
-          , fiftyMovesCounter = 0
-          , boards = [board g1]
-          , pieceList = 
-                replicate 8 (Pawn White) ++ 
-                replicate 2 (Rook White) ++ 
-                replicate 2 (Knight White) ++ 
-                replicate 2 (Bishop White) ++ 
-                [Queen White] ++ 
-                [King White] ++ 
-                replicate 8 (Pawn Black) ++
-                replicate 2 (Rook Black) ++
-                replicate 2 (Knight Black) ++
-                replicate 2 (Bishop Black) ++
-                [Queen Black] ++
-                [King Black]
-          }
-
-
--- testing interactivity
-
-cls :: IO ()
-cls = putStr "\ESC[2J"
-
-goto :: (Int, Int) -> IO ()
-goto (x,y) = putStr ("\ESC[" ++ show y ++ ";" ++ show x ++ "H")
-
-setColorGrey :: IO ()
-setColorGrey = putStr "\ESC[30m"
-
-setColorBlack :: IO ()
-setColorBlack = putStr "\ESC[31m"
-
-setColorWhite :: IO ()
-setColorWhite = putStr "\ESC[97m"
-
-showRow :: [Tile] -> Int -> IO ()
-showRow row n = do putStr $ "| " ++ show n ++ " | "
-                   setColorWhite
-                   go row
-                   setColorGrey
-                   putStrLn $ " | " ++ show n ++ " |"
-    where go []     = return () 
-          go [x]    = case getTeam x of
-                        Just Black -> do setColorBlack
-                                         putStr $ show x
-                                         setColorWhite
-                        _          -> putStr $ show x
-          go (x:xs) = do case getTeam x of
-                            Just Black -> do setColorBlack
-                                             putStr $ show x
-                                             setColorWhite
-                            _          -> putStr $ show x
-                         putStr " | "
-                         go xs 
-
-showLine :: IO ()
-showLine = putStrLn "|---|-------------------------------|---|"
-
-showBoard :: Board -> IO ()
-showBoard b = do setColorGrey
-                 putStrLn "|---| A | B | C | D | E | F | G | H |---|"
-                 showLine
-                 go b 8
-                 showLine
-                 putStrLn "|---| A | B | C | D | E | F | G | H |---|"
-    where
-        go []     _ = return ()
-        go [x]    n = showRow x n
-        go (x:xs) n = do showRow x n
-                         go xs (n - 1)
-
-run :: Game -> IO ()
-run game = do cls
-              goto (1,1)
-              showBoard $ board game
-              run' game 
-        
-run' :: Game -> IO ()
-run' game 
-    | isCheckmate game = putStrLn $ "Checkmate! " ++ if even $ turn game then 
-                                                          "White wins"    
-                                                     else 
-                                                          "Black wins"
-    | isStalemate game = putStrLn "Stalemate! "  
-    | otherwise        = do putStr $ if odd $ turn game then 
-                                        "White move: "    
-                                     else 
-                                        "Black move: "
-                            l <- readLine
-                            run $ move l game
-
--- Hutton ch10
-getCh :: IO Char
-getCh = do oldEcho <- hGetEcho stdin 
-           hSetEcho stdin False
-           x <- getChar
-           hSetEcho stdin oldEcho
-           return x
-
-readLine :: IO String
-readLine = go ""
-    where go xs = do c <- getCh
-                     if c == '\n' then
-                         do putChar '\n'
-                            return (reverse xs)
-                     else if c == '\DEL' then
-                         case xs of
-                            [] -> go ""
-                            (y:ys) ->
-                                do putStr "\b \b"
-                                   go ys
-                     else
-                         do putChar c
-                            go $ c:xs
