@@ -162,7 +162,8 @@ movePiece (N (file1, rank1) (file2, rank2)) game =
                             , turn = turn' + 1
                             , fiftyMovesCounter = 0
                             , boards = [board newgame]
-                            , pieceList = newPieceList (file2, rank2) game}
+                            , pieceList = newPieceList (file2, rank2) game
+                            , castle = setCastle newgame}
                 else
                     if isPawnMove then
                         newgame { movesList = m : ms
@@ -173,8 +174,7 @@ movePiece (N (file1, rank1) (file2, rank2)) game =
                         newgame { movesList = m : ms
                                 , turn = turn' + 1
                                 , fiftyMovesCounter = counter + 1 
-                                , boards = board newgame : boards newgame
-                                }
+                                , boards = board newgame : boards newgame} --TODO: check if nesse make setCastle here
         else game
     where newgame    = movePiece' (N (file1, rank1) (file2, rank2)) game
           canMove'   = canMove (file1, rank1) (file2, rank2) game 
@@ -196,7 +196,8 @@ movePiece (PP (file1, rank1) (file2, rank2) tile) game =
                      , turn = turn' + 1
                      , fiftyMovesCounter = 0 
                      , boards = [] 
-                     , pieceList = newPieceListPP (file1, rank1) (file2, rank2) tile game }
+                     , pieceList = newPieceListPP (file1, rank1) (file2, rank2) tile game
+                     , castle = setCastle newgame }
         else game
     where newgame     = movePiece' (PP (file1, rank1) (file2, rank2) tile) game
           canMove'    = canMove (file1, rank1) (file2, rank2) game 
@@ -208,7 +209,6 @@ movePiece (PP (file1, rank1) (file2, rank2) tile) game =
           isCapture   = getTile (file2, rank2) b /= Just Empty
           b           = board game
           isRightTile = fromJust (fmap getTeam (getTile (file1, rank1) b)) == getTeam tile
-
 movePiece' :: Move -> Game -> Game
 movePiece' (N (file1, rank1) (file2, rank2)) game = 
     case t of
@@ -271,6 +271,7 @@ movePiece' (N (file1, rank1) (file2, rank2)) game =
     where t = getTile (file1, rank1) b 
           b = board game
           (m1, m2, m3, m4) = castle game
+          
 movePiece' (PP (file1, rank1) (file2, rank2) tile) game =
     case t of
         Just (Pawn White) ->
@@ -508,6 +509,16 @@ canMakeCastle' (file1, rank1) (file2, rank2) c game
     where b = board game 
           isEmpty(file, rank) b = getTile (file, rank) b == Just Empty
 
+setCastle :: Game -> Castle
+setCastle game = (m1 && m1', m2 && m2', m3 && m3', m4 && m4')
+    where (m1, m2, m3, m4) = castle game
+          b = board game
+          m1' = getTile(0, 0) b == Just (Rook Black)
+          m2' = getTile(7, 0) b == Just (Rook Black)
+          m3' = getTile(0, 7) b == Just (Rook White)
+          m4' = getTile(7, 7) b == Just (Rook White)
+
+
 enPassant :: Coord -> Coord -> Team -> Game -> Bool
 enPassant (file1, rank1) (file2, rank2) White game =
     rank1 == 3 && 
@@ -687,7 +698,6 @@ g1 = Game { board = testBoard
                 [Queen Black] ++
                 [King Black]
           }
-
 
 
 -- testing interactivity
