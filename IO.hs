@@ -84,17 +84,17 @@ run' game
                             l <- readLine
                             run $ move l game
 
--- Hutton ch10
-getCh :: IO Char
-getCh = do oldEcho <- hGetEcho stdin 
-           hSetEcho stdin False
-           x <- getChar
-           hSetEcho stdin oldEcho
-           return x
+echoless :: IO a -> IO a
+echoless ax = do oldEcho <- hGetEcho stdin 
+                 hSetEcho stdin False
+                 x <- ax
+                 hSetEcho stdin oldEcho
+                 return x
 
+-- Hutton ch10
 readLine :: IO String
 readLine = go ""
-    where go xs = do c <- getCh
+    where go xs = do c <- echoless getChar
                      if c == '\n' then
                          do putChar '\n'
                             return (reverse xs)
