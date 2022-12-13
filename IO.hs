@@ -74,6 +74,9 @@ run' game
                                                      else 
                                                           "Black wins"
     | isStalemate game = putStrLn "Stalemate! "  
+    | isThreeRepetitions game = putStrLn "Draw (Threefold repetition)"
+    | isInsufficientMaterial game = putStrLn "Draw (Insufficient material)"
+    | fiftyMovesRule game = putStrLn "Draw (50 moves rule)"
     | otherwise        = do putStr $ if odd $ turn game then 
                                         "White move: "    
                                      else 

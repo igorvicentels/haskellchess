@@ -112,3 +112,6 @@ isInsufficientMaterial game = noPawnsLeft || onlyOneBishopLeft || oneBishopOnEac
                             length (filter (== Bishop White) list) == 1 && 
                             length (filter (== Bishop Black) list) == 1 &&
                             fmap getTileColor (findPiece (Bishop White) (board game)) /= fmap getTileColor (findPiece (Bishop Black) (board game))
+
+fiftyMovesRule :: Game -> Bool
+fiftyMovesRule game = (fiftyMovesCounter game) == 50

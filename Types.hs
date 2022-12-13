@@ -37,7 +37,6 @@ instance Show Tile where
     show Empty          = " "
 
 type Board = [[Tile]]
--- TODO: verify number of rows and columns
 
 data Game = Game { board :: Board
                  , turn :: Int                 
