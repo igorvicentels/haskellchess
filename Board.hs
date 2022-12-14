@@ -155,7 +155,7 @@ movePiece (PP (file1, rank1) (file2, rank2) tile) game =
         then newgame { movesList = m : ms
                      , turn = turn' + 1
                      , fiftyMovesCounter = 0 
-                     , boards = [] 
+                     , boards = [board newgame] 
                      , pieceList = newPieceListPP (file1, rank1) (file2, rank2) tile game
                      , castle = setCastle newgame }
         else game
