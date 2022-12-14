@@ -295,7 +295,7 @@ canMovePawn (file1, rank1) (file2, rank2) c b =
             case getTile (file2, rank2) b of
                 Nothing -> False
                 Just Empty -> 
-                    (rank2 - rank1 == 1 || (rank1 == 1 && rank2 == 3)) && file1 == file2
+                    (rank2 - rank1 == 1  (rank1 == 1 && rank2 == 3 && getTile (file2, 2) b == Just Empty)) && file1 == file2
                 Just x     -> 
                     case getTeam x of
                         Just Black -> False
@@ -304,7 +304,7 @@ canMovePawn (file1, rank1) (file2, rank2) c b =
             case getTile (file2, rank2) b of
                 Nothing -> False
                 Just Empty -> 
-                    (rank1 - rank2 == 1 || (rank1 == 6 &&  rank2 == 4)) && file1 == file2 
+                    (rank1 - rank2 == 1  (rank1 == 6 &&  rank2 == 4 && getTile (file2, 5) b == Just Empty)) && file1 == file2 
                 Just x     -> 
                     case getTeam x of
                         Just White -> False
