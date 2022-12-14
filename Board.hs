@@ -264,6 +264,7 @@ canMove :: Coord -> Coord -> Game -> Bool
 canMove (file1, rank1) (file2, rank2) game = difTile && 
                                              difTeam && 
                                              canMovePiece && 
+                                             isPlayerTurn &&
                                              not(isChecked newgame)
     where difTile = (rank1 /= rank2) || (file1 /= file2)
           difTeam = team1 /= team2 
