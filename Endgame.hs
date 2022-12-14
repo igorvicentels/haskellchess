@@ -6,89 +6,98 @@ import Board
 import Data.List
 
 isCheckmate :: Game -> Bool
-isCheckmate game = isChecked game && not(anyMove game) 
+isCheckmate game = isChecked game && null (anyMove game) 
 
 isStalemate :: Game -> Bool
-isStalemate game = not(isChecked game) && not(anyMove game)
+isStalemate game = not(isChecked game) && null (anyMove game)
 
-anyMove :: Game -> Bool
+anyMove :: Game -> [Move]
 anyMove game = anyMoveAux (0, 0) game
 
-anyMoveAux :: Coord -> Game -> Bool
+anyMoveAux :: Coord -> Game -> [Move]
 anyMoveAux (file, rank) game
     |file > 7  = anyMoveAux (0, rank + 1) game
-    |rank > 7  = False
-    |otherwise = anyMoveTile || anyMoveAux (file + 1, rank) game        
+    |rank > 7  = []
+    |otherwise = anyMoveTile ++ anyMoveAux (file + 1, rank) game        
     where b           = board game 
           anyMoveTile = 
-            case getTile (rank , file) b of
+            case getTile (file, rank) b of
                 Just (King c)   -> anyMoveKing   (file, rank) game
                 Just (Pawn c)   -> anyMovePawn c (file, rank) game
                 Just (Knight c) -> anyMoveKnight (file, rank) game
                 Just (Rook c)   -> anyMoveRook   (file, rank) game
                 Just (Bishop c) -> anyMoveBishop (file, rank) game
                 Just (Queen c)  -> anyMoveQueen  (file, rank) game
-                _               -> False
+                _               -> []
 
-anyMoveKing :: Coord -> Game -> Bool
-anyMoveKing (file, rank) game = 
-    canMove (file, rank) (file, rank + 1)     game ||
-    canMove (file, rank) (file, rank - 1)     game ||
-    canMove (file, rank) (file + 1, rank)     game ||
-    canMove (file, rank) (file - 1, rank)     game ||
-    canMove (file, rank) (file + 1, rank + 1) game ||
-    canMove (file, rank) (file - 1, rank + 1) game ||
-    canMove (file, rank) (file + 1, rank - 1) game ||
-    canMove (file, rank) (file - 1, rank - 1) game
+anyMoveKing :: Coord -> Game -> [Move]
+anyMoveKing (file, rank) game = a ++ b ++ c ++ d ++ e ++ f ++ g ++ h
+    where a = if canMove (file, rank) (file, rank + 1) game then [N (file, rank) (file, rank + 1)] else []
+          b = if canMove (file, rank) (file, rank - 1) game then [N (file, rank) (file, rank - 1)] else []
+          c = if canMove (file, rank) (file + 1, rank) game then [N (file, rank) (file + 1, rank)] else []
+          d = if canMove (file, rank) (file - 1, rank) game then [N (file, rank) (file - 1, rank)] else []
+          e = if canMove (file, rank) (file + 1, rank + 1) game then [N (file, rank) (file + 1, rank + 1)] else []
+          f = if canMove (file, rank) (file - 1, rank + 1) game then [N (file, rank) (file - 1, rank + 1)] else []
+          g = if canMove (file, rank) (file + 1, rank - 1) game then [N (file, rank) (file + 1, rank - 1)] else []
+          h = if canMove (file, rank) (file - 1, rank - 1) game then [N (file, rank) (file - 1, rank - 1)] else []
 
-anyMoveKnight :: Coord -> Game -> Bool
-anyMoveKnight (file, rank) game = 
-    canMove (file, rank) (file + 1, rank + 2) game ||
-    canMove (file, rank) (file + 1, rank - 2) game ||
-    canMove (file, rank) (file - 1, rank + 2) game ||
-    canMove (file, rank) (file - 1, rank - 2) game ||
-    canMove (file, rank) (file - 2, rank + 1) game ||
-    canMove (file, rank) (file - 2, rank - 1) game ||
-    canMove (file, rank) (file + 2, rank + 1) game ||
-    canMove (file, rank) (file + 2, rank - 1) game
+anyMoveKnight :: Coord -> Game -> [Move]
+anyMoveKnight (file, rank) game = a ++ b ++ c ++ d ++ e ++ f ++ g ++ h
+    where a = if canMove (file, rank) (file + 1, rank + 2) game then [N (file, rank) (file + 1, rank + 2)] else []
+          b = if canMove (file, rank) (file + 1, rank - 2) game then [N (file, rank) (file + 1, rank - 2)] else []
+          c = if canMove (file, rank) (file - 1, rank + 2) game then [N (file, rank) (file - 1, rank + 2)] else []
+          d = if canMove (file, rank) (file - 1, rank - 2) game then [N (file, rank) (file - 1, rank - 2)] else []
+          e = if canMove (file, rank) (file - 2, rank + 1) game then [N (file, rank) (file - 2, rank + 1)] else []
+          f = if canMove (file, rank) (file - 2, rank - 1) game then [N (file, rank) (file - 2, rank - 1)] else []
+          g = if canMove (file, rank) (file + 2, rank + 1) game then [N (file, rank) (file + 2, rank + 1)] else []
+          h = if canMove (file, rank) (file + 2, rank - 1) game then [N (file, rank) (file + 2, rank - 1)] else []
+    
 
-anyMovePawn :: Team -> Coord -> Game -> Bool
+anyMovePawn :: Team -> Coord -> Game -> [Move]
 anyMovePawn c (file, rank) game = 
     case c of
-        Black -> canMove (file, rank) (file, rank + 1)     game || 
-                 canMove (file, rank) (file, rank + 2)     game || 
-                 canMove (file, rank) (file + 1, rank + 1) game ||
-                 canMove (file, rank) (file - 1, rank + 1) game
+        Black -> a ++ b ++ c ++ d
+            where
+                a = if canMove (file, rank) (file, rank + 1)     game then [N (file, rank) (file, rank + 1)] else [] 
+                b = if canMove (file, rank) (file, rank + 2)     game then [N (file, rank) (file, rank + 2)] else []
+                c = if canMove (file, rank) (file + 1, rank + 1) game then [N (file, rank) (file + 1, rank + 1)] else []
+                d = if canMove (file, rank) (file - 1, rank + 1) game then [N (file, rank) (file - 1, rank + 1)] else []
 
-        White -> canMove (file, rank) (file, rank - 1) game     || 
-                 canMove (file, rank) (file, rank - 2) game     || 
-                 canMove (file, rank) (file + 1, rank - 1) game ||
-                 canMove (file, rank) (file - 1, rank - 1) game
+        White -> a ++ b ++ c ++ d
+            where
+                a = if canMove (file, rank) (file, rank - 1)     game then [N (file, rank) (file, rank - 1)] else [] 
+                b = if canMove (file, rank) (file, rank - 2)     game then [N (file, rank) (file, rank - 2)] else []
+                c = if canMove (file, rank) (file + 1, rank - 1) game then [N (file, rank) (file + 1, rank - 1)] else []
+                d = if canMove (file, rank) (file - 1, rank - 1) game then [N (file, rank) (file - 1, rank - 1)] else []
 
-anyMoveRook :: Coord -> Game -> Bool
+anyMoveRook :: Coord -> Game -> [Move]
 anyMoveRook (file, rank) game = 
-    anyMoveLineAux (file, rank) (file + 1, rank) game ||
-    anyMoveLineAux (file, rank) (file - 1, rank) game || 
-    anyMoveLineAux (file, rank) (file, rank - 1) game || 
+    anyMoveLineAux (file, rank) (file + 1, rank) game ++
+    anyMoveLineAux (file, rank) (file - 1, rank) game ++ 
+    anyMoveLineAux (file, rank) (file, rank - 1) game ++ 
     anyMoveLineAux (file, rank) (file, rank + 1) game
 
-anyMoveBishop :: Coord -> Game -> Bool
+anyMoveBishop :: Coord -> Game -> [Move]
 anyMoveBishop (file, rank) game =
-    anyMoveLineAux (file, rank) (file + 1, rank + 1) game ||
-    anyMoveLineAux (file, rank) (file + 1, rank - 1) game || 
-    anyMoveLineAux (file, rank) (file - 1, rank + 1) game || 
+    anyMoveLineAux (file, rank) (file + 1, rank + 1) game ++
+    anyMoveLineAux (file, rank) (file + 1, rank - 1) game ++ 
+    anyMoveLineAux (file, rank) (file - 1, rank + 1) game ++ 
     anyMoveLineAux (file, rank) (file - 1, rank - 1) game
 
-anyMoveLineAux :: Coord -> Coord -> Game -> Bool 
-anyMoveLineAux (file, rank) (file2, rank2) game = insideTable && (canMove' || nextTile)
+anyMoveLineAux :: Coord -> Coord -> Game -> [Move]
+anyMoveLineAux (file, rank) (file2, rank2) game = 
+    if insideTable then 
+        if canMove' then [N (file, rank) (file2, rank2)] ++ nextTile
+        else nextTile
+    else []
     where insideTable = file2 > 0 && file2 < 7 && rank2 > 0 && rank2 < 7
           canMove'    = canMove (file, rank) (file2, rank2) game
           rankDif     = rank2 - rank
           fileDif     = file2 - file
           nextTile    = anyMoveLineAux (file, rank) (file2 + fileDif, rank2 + rankDif) game
 
-anyMoveQueen :: Coord -> Game -> Bool
-anyMoveQueen (file, rank) game = anyMoveBishop (file, rank) game || anyMoveRook (file, rank) game
+anyMoveQueen :: Coord -> Game -> [Move]
+anyMoveQueen (file, rank) game = anyMoveBishop (file, rank) game ++ anyMoveRook (file, rank) game
 
 countBoards :: [Board] -> [(Int, Board)]
 countBoards []     = []

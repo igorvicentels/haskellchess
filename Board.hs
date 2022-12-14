@@ -263,11 +263,13 @@ moveEnPassant (file1, rank1) (file2, rank2) c b = setTile (file1, rank1) Empty (
 canMove :: Coord -> Coord -> Game -> Bool
 canMove (file1, rank1) (file2, rank2) game = difTile && 
                                              difTeam && 
+                                             inside &&
                                              canMovePiece && 
                                              isPlayerTurn &&
                                              not(isChecked newgame)
     where difTile = (rank1 /= rank2) || (file1 /= file2)
           difTeam = team1 /= team2 
+          inside = file2 >= 0 && file2 < 8 && rank2 >= 0 && rank2 < 8
           team1 = fmap getTeam (getTile (file1, rank1) b)
           team2 = fmap getTeam (getTile (file2, rank2) b)
           b = board game
