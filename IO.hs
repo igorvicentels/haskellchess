@@ -81,7 +81,8 @@ run' game
                                         "White move: "    
                                      else 
                                         "Black move: "
-                            l <- readLine
+                            hFlush stdout
+                            l <- getLine
                             run $ move l game
 
 echoless :: IO a -> IO a
