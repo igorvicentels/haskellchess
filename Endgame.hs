@@ -90,10 +90,10 @@ anyMoveLineAux (file, rank) (file2, rank2) game =
         if canMove' then [N (file, rank) (file2, rank2)] ++ nextTile
         else nextTile
     else []
-    where insideTable = file2 > 0 && file2 < 7 && rank2 > 0 && rank2 < 7
+    where insideTable = file2 >= 0 && file2 <= 7 && rank2 >= 0 && rank2 <= 7
           canMove'    = canMove (file, rank) (file2, rank2) game
-          rankDif     = rank2 - rank
-          fileDif     = file2 - file
+          rankDif     = if (rank2 - rank) == 0 then 0 else (if (rank2 - rank) > 0 then 1 else -1) 
+          fileDif     = if (file2 - file) == 0 then 0 else (if (file2 - file) > 0 then 1 else -1) 
           nextTile    = anyMoveLineAux (file, rank) (file2 + fileDif, rank2 + rankDif) game
 
 anyMoveQueen :: Coord -> Game -> [Move]
