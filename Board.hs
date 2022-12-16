@@ -462,12 +462,12 @@ canMakeCastle' (file1, rank1) (file2, rank2) c game
     | file1 == 4 && file2 == 6 = isEmpty (5, rank2) b && 
                                  isEmpty (6, rank2) b && 
                                  (canMove (4, rank1) (5, rank2) game) && 
-                                 (canMove (5, rank2) (6, rank2) (movePiece (N (4, rank1) (5, rank2)) game))
+                                 (canMove (5, rank2) (6, rank2) (movePiece' (N (4, rank1) (5, rank2)) game))
     | file1 == 4 && file2 == 2 = isEmpty (3, rank2) b && 
                                  isEmpty (2, rank2) b && 
                                  isEmpty (1, rank2) b && 
                                  (canMove (4, rank1) (3, rank2) game) && 
-                                 (canMove (3, rank2) (2, rank2) (movePiece (N (4, rank1) (3, rank2)) game)) 
+                                 (canMove (3, rank2) (2, rank2) (movePiece' (N (4, rank1) (3, rank2)) game)) 
     | otherwise = False
     where b = board game 
           isEmpty(file, rank) b = getTile (file, rank) b == Just Empty
