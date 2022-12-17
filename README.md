@@ -32,3 +32,5 @@ As possíveis escolhas de peças na promoção do peão são:
 -`bw`: bispo branco        -`bb`: bispo preto
 
 -`nw`: cavalo branco       -`nb`: cavalo preto
+
+Em caso de desistência, basta digitar o comando `resign` e a vitória será declarada imediatamente para o oponente.

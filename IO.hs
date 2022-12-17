@@ -3,6 +3,7 @@ module IO where
 import Board
 import Types
 import Endgame
+import Data.Char
 
 import System.IO
 
@@ -70,9 +71,9 @@ run game = do cls
 run' :: Game -> IO ()
 run' game 
     | isCheckmate game = putStrLn $ "Checkmate! " ++ if even $ turn game then 
-                                                          "White wins"    
+                                                          "White wins!"    
                                                      else 
-                                                          "Black wins"
+                                                          "Black wins!"
     | isStalemate game = putStrLn "Stalemate! "  
     | isThreeRepetitions game = putStrLn "Draw (Threefold repetition)"
     | isInsufficientMaterial game = putStrLn "Draw (Insufficient material)"
@@ -83,28 +84,17 @@ run' game
                                         "Black move: "
                             hFlush stdout
                             l <- getLine
-                            run $ move l game
+                            let l' = map toLower l
+                            if l' == "resign" then
+                                runResign game
+                            else
+                                run $ move l game
 
-echoless :: IO a -> IO a
-echoless ax = do oldEcho <- hGetEcho stdin 
-                 hSetEcho stdin False
-                 x <- ax
-                 hSetEcho stdin oldEcho
-                 return x
-
--- Hutton ch10
-readLine :: IO String
-readLine = go ""
-    where go xs = do c <- echoless getChar
-                     if c == '\n' then
-                         do putChar '\n'
-                            return (reverse xs)
-                     else if c == '\DEL' then
-                         case xs of
-                            [] -> go ""
-                            (y:ys) ->
-                                do putStr "\b \b"
-                                   go ys
-                     else
-                         do putChar c
-                            go $ c:xs
+runResign :: Game -> IO ()
+runResign game = do cls
+                    goto (1,1)
+                    showBoard $ board game
+                    if odd $ turn game then
+                        putStrLn "White gave up! Black Wins!"
+                    else
+                        putStrLn "Black gave up! White Wins!" 
