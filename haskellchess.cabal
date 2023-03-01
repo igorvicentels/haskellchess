@@ -25,7 +25,10 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Board
+      Endgame
+      IO
+      Types
   other-modules:
       Paths_haskellchess
   hs-source-dirs:

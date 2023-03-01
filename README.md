@@ -12,12 +12,12 @@ Esta é uma versão do xadrez implementada em Haskell.
 Primeiramente é preciso compilar os arquivos. Para isso, utilize o comando:
 
 ```sh
-ghc Main
+stack build
 ```
 Após compilado, basta utilizar o seguinte comando para executar:
 
 ```sh
-./Main
+stack exec haskellchess-exe
 ```
 
 ## Como jogar
